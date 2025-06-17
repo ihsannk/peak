@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PEAK - Pharmacy Enforcement Archive of Knowledge</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PDF.js library from Mozilla -->
@@ -46,7 +47,7 @@
             right: 0;
             bottom: 0;
             overflow: hidden;
-            opacity: 0; /* Changed from 0.2 to 0 to fix ghost text issue */
+            opacity: 0; /* Set to 0 to fix ghost text issue */
             line-height: 1.0;
         }
         .textLayer > span {
@@ -56,27 +57,20 @@
             cursor: text;
             transform-origin: 0% 0%;
         }
-        .highlight-layer {
-            position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none; /* Make it non-interactive */
-        }
-        .highlight {
-            position: absolute;
-            background-color: rgba(255, 255, 0, 0.5); /* Semi-transparent yellow */
-        }
     </style>
 </head>
 <body class="text-gray-800">
 
     <!-- Header -->
     <header class="bg-white shadow-md">
-        <div class="container mx-auto px-4 md:px-8 py-4">
-            <h1 class="text-3xl font-bold text-blue-700">PEAK</h1>
-            <p class="text-md text-gray-600">Pharmacy Enforcement Archive of Knowledge</p>
+        <div class="container mx-auto px-4 md:px-8 py-3">
+            <div class="flex items-center">
+                <img src="peak.png" alt="PEAK Logo" class="h-12 mr-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">PEAK</h1>
+                    <p class="text-md text-gray-600">Pharmacy Enforcement Archive of Knowledge</p>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -160,7 +154,7 @@
                 category: "Acts",
                 files: [
                     { filename: "act-366_2023.pdf", displayName: "Poisons Act 1952" },
-                    { filename: "sales-drug-act-1952-act-368 (1).pdf", displayName: "Sale of Drugs Act 1952" },
+                    { filename: "sales-drug-act-1952-act-368-1.pdf", displayName: "Sale of Drugs Act 1952" },
                     { filename: "medicine-advertisement-sale-act-1956-act-290_2.pdf", displayName: "Medicines (Advertisement and Sale) Act 1956" },
                     { filename: "registration-pharmacists-act-1951-act-371_2.pdf", displayName: "Registration of Pharmacists Act 1951" },
                     { filename: "dangerous-drugs-act-1952-act-234_1.pdf", displayName: "Dangerous Drugs Act 1952" }
@@ -173,7 +167,7 @@
                     { filename: "poisons-psychotropic-substances-regulations-1989-2-0_0.pdf", displayName: "Poisons (Psychotropic Substances) Regulations 1989" },
                     { filename: "poisons-sodium-hydroxide-regulations-1962-0.pdf", displayName: "Poisons (Sodium Hydroxide) Regulations 1962" },
                     { filename: "peraturan-peraturan-racun-pengkompaunan-kesalahan-2023.pdf", displayName: "Peraturan-Peraturan Racun (Pengkompaunan Kesalahan) 2023" },
-                    { filename: "control-drugs-and-cosmetics-regulations-1984 (1).pdf", displayName: "Control of Drugs and Cosmetics Regulations 1984" },
+                    { filename: "control-drugs-and-cosmetics-regulations-1984-1.pdf", displayName: "Control of Drugs and Cosmetics Regulations 1984" },
                     { filename: "medicine-advertisements-board-regulations-1976-19092024_0.pdf", displayName: "Medicines (Advertisement Board) Regulations 1976" },
                     { filename: "registration-pharmacists-regulations-2004_0.pdf", displayName: "Registration of Pharmacists Regulations 2004" },
                     { filename: "dangerous-drugs-regulations-1952-clean.pdf", displayName: "Dangerous Drugs Regulations 1952" }
@@ -330,7 +324,10 @@
                         const snippetEnd = Math.min(pageText.length, match.index + match[0].length + contextRadius);
                         let snippet = pageText.substring(snippetStart, snippetEnd);
                         
-                        snippet = snippet.replace(regex, `<strong class="bg-yellow-300 font-semibold">$&</strong>`);
+                        // Use a non-global regex for replacement inside the loop to avoid issues
+                        const highlightRegex = new RegExp(isWholeWord ? `\\b${term}\\b` : term, flags.replace('g', ''));
+                        snippet = snippet.replace(highlightRegex, `<strong class="bg-yellow-300 font-semibold">$&</strong>`);
+
                         if (snippetStart > 0) snippet = '... ' + snippet;
                         if (snippetEnd < pageText.length) snippet = snippet + ' ...';
                         pageSnippets.push(snippet);
@@ -434,36 +431,6 @@
             textLayerDiv.style.width = `${viewport.width}px`;
             textLayerDiv.style.height = `${viewport.height}px`;
             pdfjsLib.renderTextLayer({ textContent, container: textLayerDiv, viewport, textDivs: [] });
-            
-            // Highlight search term if applicable
-            if (currentSearchQuery) {
-                const highlightLayer = document.createElement('div');
-                highlightLayer.className = 'highlight-layer';
-                pageContainer.appendChild(highlightLayer);
-
-                const isCaseSensitive = caseSensitiveCheck.checked;
-                const isWholeWord = wholeWordCheck.checked;
-                const term = currentSearchQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-                const regex = new RegExp(isWholeWord ? `\\b${term}\\b` : term, isCaseSensitive ? 'g' : 'gi');
-                
-                let combinedText = textContent.items.map(item => item.str).join('');
-                let match;
-                while ((match = regex.exec(combinedText))) {
-                    const highlight = document.createElement('div');
-                    highlight.className = 'highlight';
-                    // This is a simplified highlighting and may not be perfectly accurate for all PDFs.
-                    // It approximates the position based on character count.
-                    const textItem = textContent.items[Math.floor(match.index / (combinedText.length / textContent.items.length))];
-                    if (textItem) {
-                        const tx = pdfjsLib.Util.transform(viewport.transform, textItem.transform);
-                        highlight.style.left = `${tx[4]}px`;
-                        highlight.style.top = `${tx[5]}px`;
-                        highlight.style.width = `${textItem.width}px`;
-                        highlight.style.height = `${textItem.height}px`;
-                        highlightLayer.appendChild(highlight);
-                    }
-                }
-            }
         }
         
         closeModalBtn.addEventListener('click', () => {
