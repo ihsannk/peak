@@ -1,7 +1,7 @@
 <!DOCTYPE html>
+<!-- Author: Ihsan Norkhair -->
 <html lang="en">
 <head>
-    <!-- Author: Ihsan Norkhair -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PEAK - Pharmacy Enforcement Archive of Knowledge</title>
@@ -29,11 +29,13 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s, opacity 0.3s;
             background-color: #ffffff;
+            width: 100%;
+            height: auto;
         }
         .pdf-list-item:hover canvas {
             transform: translateY(-5px);
         }
-        .thumbnails-hidden .pdf-list-item canvas {
+        .thumbnails-hidden .pdf-list-item .canvas-container {
             display: none;
         }
         #pdf-viewer-canvas-container .page-container {
@@ -56,31 +58,21 @@
             opacity: 1; 
             line-height: 1.0;
         }
-        .textLayer > span {
+        .textLayer ::selection {
+            background: rgba(242, 126, 35, 0.4);
+        }
+        .textLayer > span, .textLayer > br {
             color: transparent; 
             position: absolute;
             white-space: pre;
             cursor: text;
             transform-origin: 0% 0%;
         }
-        .textLayer > span::selection {
-            background-color: rgba(242, 126, 35, 0.4);
-        }
-        .highlight-layer {
-            position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-        }
-        .highlight {
-            position: absolute;
+        mark {
             background-color: rgba(242, 126, 35, 0.5); /* Orange highlight */
-            border-radius: 2px;
         }
-        .current-match {
-            background-color: rgba(67, 185, 255, 0.5); /* Blue highlight for current match */
+        mark.current-match {
+            background-color: rgba(67, 185, 255, 0.7); /* Blue highlight for current match */
         }
     </style>
 </head>
@@ -119,7 +111,7 @@
                 <h2 class="text-2xl font-semibold mb-4 text-[#041E42]">2. Search Content</h2>
                 <div class="relative">
                     <input type="text" id="search-input" placeholder="Enter search term..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#041E42]">
-                    <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden">&times;</button>
+                    <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden text-2xl font-bold">&times;</button>
                 </div>
                 <div class="flex justify-between items-center mt-4">
                     <div class="flex gap-6">
@@ -240,7 +232,8 @@
         let viewerSearchState = {
             matches: [],
             currentMatchIndex: -1,
-            pdfDoc: null
+            pdfDoc: null,
+            query: ''
         };
 
         document.addEventListener('DOMContentLoaded', initializeApp);
@@ -256,25 +249,25 @@
             // Create placeholders first for better perceived performance
             PDF_CATEGORIES.forEach(category => {
                 const categoryContainer = document.createElement('div');
-                categoryContainer.innerHTML = `<h3 class="text-xl font-semibold text-[#041E42] border-b-2 border-orange-200 pb-2 mb-4 col-span-full">${category.category}</h3>`;
+                categoryContainer.innerHTML = `<h3 class="text-xl font-semibold text-[#041E42] border-b-2 border-orange-200 pb-2 mb-4">${category.category}</h3>`;
                 const gridContainer = document.createElement('div');
-                gridContainer.className = "grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-6 gap-y-8 justify-items-center";
+                gridContainer.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-6 gap-y-8";
                 categoryContainer.appendChild(gridContainer);
                 pdfListCategoriesContainer.appendChild(categoryContainer);
 
                 category.files.forEach(pdfInfo => {
                     const currentIndex = globalFileIndex++;
                     const listItem = document.createElement('div');
-                    listItem.className = 'pdf-list-item flex flex-col h-56 w-36';
+                    listItem.className = 'pdf-list-item flex flex-col';
                     listItem.id = `pdf-item-${currentIndex}`;
                     listItem.innerHTML = `
-                        <div class="flex-shrink-0 relative">
-                            <canvas class="cursor-pointer"></canvas>
-                            <div class="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-md">
+                        <div class="canvas-container relative w-full" style="padding-top: 141.42%;"> <!-- A4 Aspect Ratio -->
+                            <canvas class="cursor-pointer absolute top-0 left-0 w-full h-full"></canvas>
+                            <div class="spinner-container absolute inset-0 flex items-center justify-center bg-gray-100 rounded-md">
                                 <div class="h-6 w-6 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
                             </div>
                         </div>
-                        <div class="mt-2 text-center flex-grow flex items-center">
+                        <div class="mt-2 text-center flex-grow flex items-center justify-center">
                             <label for="pdf-check-${currentIndex}" class="flex items-center justify-center cursor-pointer">
                                 <input type="checkbox" id="pdf-check-${currentIndex}" data-pdf-index="${currentIndex}" class="mr-2 h-4 w-4 accent-[#041E42]">
                                 <span class="text-sm break-words">${pdfInfo.displayName}</span>
@@ -295,17 +288,17 @@
                     try {
                         const pdfDoc = await pdfjsLib.getDocument(pdfInfo.filename).promise;
                         const page = await pdfDoc.getPage(1);
-                        const viewport = page.getViewport({ scale: 0.4 });
                         const listItem = document.getElementById(`pdf-item-${currentIndex}`);
                         const canvas = listItem.querySelector('canvas');
                         
                         canvas.onclick = () => openPdfViewer(currentIndex, 1);
+                        const viewport = page.getViewport({ scale: 1.0 });
                         canvas.height = viewport.height;
                         canvas.width = viewport.width;
                         const context = canvas.getContext('2d');
                         await page.render({ canvasContext: context, viewport: viewport }).promise;
                         
-                        listItem.querySelector('.absolute').remove(); // Remove spinner
+                        listItem.querySelector('.spinner-container').remove();
 
                         let extractedText = [];
                         for (let j = 1; j <= pdfDoc.numPages; j++) {
@@ -323,7 +316,7 @@
                     } catch (error) {
                         console.error(`Error loading ${pdfInfo.filename}:`, error);
                         const listItem = document.getElementById(`pdf-item-${currentIndex}`);
-                        listItem.innerHTML = `<div class="w-full h-40 bg-gray-200 flex items-center justify-center p-2 rounded-md">Failed to load</div><div class="mt-2 text-sm">${pdfInfo.displayName}</div>`;
+                        listItem.innerHTML = `<div class="w-full h-full bg-gray-200 flex items-center justify-center p-2 rounded-md"><span class="text-red-600 font-semibold">Failed to load</span></div><div class="mt-2 text-sm">${pdfInfo.displayName}</div>`;
                     }
                 }
             }
@@ -392,14 +385,11 @@
                     regex.lastIndex = 0;
                     while ((match = regex.exec(pageText)) !== null) {
                         if (!foundInFile) foundInFile = true;
-                        
                         const contextRadius = 70;
                         const snippetStart = Math.max(0, match.index - contextRadius);
                         const snippetEnd = Math.min(pageText.length, match.index + match[0].length + contextRadius);
                         let snippet = pageText.substring(snippetStart, snippetEnd);
-                        
                         snippet = snippet.replace(new RegExp(term, flags), `<strong class="bg-[#F27E23] bg-opacity-50 font-semibold">$&</strong>`);
-
                         if (snippetStart > 0) snippet = '... ' + snippet;
                         if (snippetEnd < pageText.length) snippet = snippet + ' ...';
                         pageSnippets.push(snippet);
@@ -451,19 +441,17 @@
             const pdfItem = pdfData[pdfIndex];
             if (!pdfItem) return;
             
-            viewerSearchState.pdfDoc = pdfItem.doc;
+            resetViewerSearchState(pdfItem.doc);
             pdfViewerTitle.textContent = pdfItem.displayName;
             pageCountSpan.textContent = pdfItem.doc.numPages;
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            canvasContainer.innerHTML = ''; // Clear previous pages
+            canvasContainer.innerHTML = '';
 
             for (let i = 1; i <= pdfItem.doc.numPages; i++) {
                 const pageContainer = document.createElement('div');
                 pageContainer.className = 'page-container';
                 pageContainer.dataset.pageNumber = i;
-                const canvas = document.createElement('canvas');
-                pageContainer.appendChild(canvas);
                 canvasContainer.appendChild(pageContainer);
             }
             
@@ -476,9 +464,10 @@
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         const pageNum = parseInt(entry.target.dataset.pageNumber);
-                        if (!entry.target.dataset.rendered) {
-                            entry.target.dataset.rendered = "true";
-                            renderLazyPage(pdfItem.doc, pageNum);
+                        const pageContainer = entry.target;
+                        if (!pageContainer.dataset.rendered) {
+                            pageContainer.dataset.rendered = "true";
+                            renderLazyPage(pdfItem.doc, pageNum, pageContainer);
                         }
                         pageNumSpan.textContent = pageNum;
                     }
@@ -488,14 +477,14 @@
             document.querySelectorAll('.page-container').forEach(pc => viewerObserver.observe(pc));
         }
 
-        async function renderLazyPage(pdfDoc, pageNum) {
+        async function renderLazyPage(pdfDoc, pageNum, pageContainer) {
             const page = await pdfDoc.getPage(pageNum);
             const viewport = page.getViewport({ scale: 1.5 });
-            const pageContainer = document.querySelector(`.page-container[data-page-number="${pageNum}"]`);
-            const canvas = pageContainer.querySelector('canvas');
+            const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             canvas.height = viewport.height;
             canvas.width = viewport.width;
+            pageContainer.appendChild(canvas);
             await page.render({ canvasContext: context, viewport: viewport }).promise;
 
             const textContent = await page.getTextContent();
@@ -507,30 +496,48 @@
             pdfjsLib.renderTextLayer({ textContent, container: textLayerDiv, viewport, textDivs: [] });
         }
 
-        async function searchInViewer() {
-            const query = viewerSearchInput.value.trim();
-            if (!query || !viewerSearchState.pdfDoc) return;
-            
+        function highlightMatchesInViewer() {
+            // Clear previous highlights
+            document.querySelectorAll('mark').forEach(m => {
+                const parent = m.parentNode;
+                parent.replaceChild(document.createTextNode(m.textContent), m);
+                parent.normalize(); // Merge adjacent text nodes
+            });
+
+            if (!viewerSearchState.query) return;
+
+            const flags = "gi"; // Viewer search is always case-insensitive for simplicity
+            const term = viewerSearchState.query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const regex = new RegExp(term, flags);
             viewerSearchState.matches = [];
-            const isCaseSensitive = false; // Simplified for viewer search
-            const isWholeWord = false;
-            const flags = isCaseSensitive ? 'g' : 'gi';
-            const term = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-            const regex = new RegExp(isWholeWord ? `\\b${term}\\b` : term, flags);
 
-            for(let i=1; i <= viewerSearchState.pdfDoc.numPages; i++) {
-                const page = await viewerSearchState.pdfDoc.getPage(i);
-                const textContent = await page.getTextContent();
-                const pageText = textContent.items.map(item => item.str).join('');
-                
-                let match;
-                while((match = regex.exec(pageText))) {
-                    viewerSearchState.matches.push({ pageNum: i, index: match.index });
-                }
-            }
+            document.querySelectorAll('.textLayer').forEach((textLayer, pageIndex) => {
+                 const pageNum = pageIndex + 1;
+                 const textNodes = Array.from(textLayer.querySelectorAll('span')).flatMap(span => Array.from(span.childNodes).filter(node => node.nodeType === Node.TEXT_NODE));
 
+                 textNodes.forEach(textNode => {
+                    let match;
+                    while((match = regex.exec(textNode.textContent)) !== null) {
+                        const mark = document.createElement('mark');
+                        mark.textContent = match[0];
+                        
+                        const after = textNode.splitText(match.index);
+                        after.textContent = after.textContent.substring(match[0].length);
+                        textNode.parentNode.insertBefore(mark, after);
+                        
+                        viewerSearchState.matches.push({ pageNum, element: mark });
+                        regex.lastIndex = 0; // Reset for next node
+                    }
+                 });
+            });
+            
             viewerSearchState.currentMatchIndex = -1;
             updateViewerSearchUI();
+        }
+
+        function searchInViewer() {
+            viewerSearchState.query = viewerSearchInput.value.trim();
+            highlightMatchesInViewer();
             if (viewerSearchState.matches.length > 0) {
                 goToNextMatch();
             }
@@ -540,7 +547,7 @@
             if (viewerSearchState.matches.length === 0) return;
             viewerSearchState.currentMatchIndex++;
             if(viewerSearchState.currentMatchIndex >= viewerSearchState.matches.length) {
-                viewerSearchState.currentMatchIndex = 0;
+                viewerSearchState.currentMatchIndex = 0; // Wrap around
             }
             navigateToMatch(viewerSearchState.currentMatchIndex);
         }
@@ -549,17 +556,19 @@
             if (viewerSearchState.matches.length === 0) return;
             viewerSearchState.currentMatchIndex--;
             if(viewerSearchState.currentMatchIndex < 0) {
-                viewerSearchState.currentMatchIndex = viewerSearchState.matches.length - 1;
+                viewerSearchState.currentMatchIndex = viewerSearchState.matches.length - 1; // Wrap around
             }
              navigateToMatch(viewerSearchState.currentMatchIndex);
         }
 
         function navigateToMatch(matchIndex) {
+            // Remove highlight from previous match
+            document.querySelectorAll('mark.current-match').forEach(m => m.classList.remove('current-match'));
+
             const match = viewerSearchState.matches[matchIndex];
-            const targetPage = document.querySelector(`.page-container[data-page-number="${match.pageNum}"]`);
-            if (targetPage) {
-                viewerBody.scrollTop = targetPage.offsetTop - 20;
-            }
+            const targetElement = match.element;
+            targetElement.classList.add('current-match');
+            targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
             updateViewerSearchUI();
         }
 
@@ -571,6 +580,12 @@
             viewerPrevBtn.disabled = total === 0;
         }
 
+        function resetViewerSearchState(pdfDoc = null) {
+            viewerSearchInput.value = '';
+            viewerSearchState = { matches: [], currentMatchIndex: -1, pdfDoc, query: '' };
+            updateViewerSearchUI();
+        }
+        
         viewerSearchInput.addEventListener('keydown', e => {
             if(e.key === 'Enter') searchInViewer();
         });
@@ -581,9 +596,7 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             if (viewerObserver) viewerObserver.disconnect();
-            viewerSearchInput.value = '';
-            viewerSearchState = { matches: [], currentMatchIndex: -1, pdfDoc: null };
-            updateViewerSearchUI();
+            resetViewerSearchState();
         });
     </script>
 </body>
