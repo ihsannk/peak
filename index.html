@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- author: Ihsan Norkhair -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PEAK - Pharmacy Enforcement Archive of Knowledge</title>
@@ -16,7 +17,7 @@
             background-color: #f0f4f8;
         }
         #loader {
-            border-top-color: #2563eb;
+            border-top-color: #041E42;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
@@ -27,6 +28,7 @@
             border-radius: 0.375rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s;
+            background-color: #ffffff;
         }
         .pdf-list-item:hover canvas {
             transform: translateY(-5px);
@@ -47,41 +49,37 @@
             right: 0;
             bottom: 0;
             overflow: hidden;
-            opacity: 0; /* Set to 0 to fix ghost text issue */
+            opacity: 1; 
             line-height: 1.0;
         }
         .textLayer > span {
-            color: transparent;
+            color: transparent; 
             position: absolute;
             white-space: pre;
             cursor: text;
             transform-origin: 0% 0%;
         }
+        /* Style for the text selection highlight */
+        .textLayer > span::selection {
+            background-color: rgba(242, 126, 35, 0.4); /* Orange highlight */
+        }
     </style>
 </head>
 <body class="text-gray-800">
 
-    <!-- Header -->
-    <header class="bg-white shadow-md">
-        <div class="container mx-auto px-4 md:px-8 py-3">
-            <div class="flex items-center">
-                <img src="peak.png" alt="PEAK Logo" class="h-12 mr-4">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800">PEAK</h1>
-                    <p class="text-md text-gray-600">Pharmacy Enforcement Archive of Knowledge</p>
-                </div>
-            </div>
-        </div>
-    </header>
-
     <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+        <!-- Logo Section -->
+        <div class="mb-8">
+            <img src="peak.png" alt="PEAK Logo" class="h-14">
+        </div>
+        
         <main>
             <!-- PDF Selection Section -->
             <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-semibold text-gray-700">1. Select Documents to Search</h2>
+                    <h2 class="text-2xl font-semibold text-[#041E42]">1. Select Documents to Search</h2>
                     <div class="flex gap-2">
-                        <button id="select-all-btn" class="text-sm bg-blue-100 text-blue-700 font-semibold py-1 px-3 rounded-md hover:bg-blue-200">Select All</button>
+                        <button id="select-all-btn" class="text-sm bg-[#F27E23] text-white font-semibold py-1 px-3 rounded-md hover:bg-opacity-90">Select All</button>
                         <button id="deselect-all-btn" class="text-sm bg-gray-200 text-gray-700 font-semibold py-1 px-3 rounded-md hover:bg-gray-300">Deselect All</button>
                     </div>
                 </div>
@@ -96,18 +94,18 @@
 
             <!-- Search Section -->
             <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
-                <h2 class="text-2xl font-semibold mb-4 text-gray-700">2. Search Content</h2>
+                <h2 class="text-2xl font-semibold mb-4 text-[#041E42]">2. Search Content</h2>
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <input type="text" id="search-input" placeholder="Enter search term..." class="flex-grow w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button id="search-btn" class="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400" disabled>Search</button>
+                    <input type="text" id="search-input" placeholder="Enter search term..." class="flex-grow w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#041E42]">
+                    <button id="search-btn" class="w-full sm:w-auto bg-[#041E42] text-white font-bold py-3 px-8 rounded-lg hover:bg-opacity-90 transition disabled:bg-gray-400" disabled>Search</button>
                 </div>
                 <div class="mt-4 flex gap-6">
                     <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" id="case-sensitive-check" class="h-4 w-4 accent-blue-600">
+                        <input type="checkbox" id="case-sensitive-check" class="h-4 w-4 accent-[#041E42]">
                         <span class="ml-2 text-gray-700">Case-sensitive</span>
                     </label>
                     <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" id="whole-word-check" class="h-4 w-4 accent-blue-600">
+                        <input type="checkbox" id="whole-word-check" class="h-4 w-4 accent-[#041E42]">
                         <span class="ml-2 text-gray-700">Match whole word only</span>
                     </label>
                 </div>
@@ -115,7 +113,7 @@
 
             <!-- Results Section -->
             <div id="results-container" class="bg-white p-6 rounded-lg shadow-lg">
-                <h2 class="text-2xl font-semibold mb-4 text-gray-700">3. Results</h2>
+                <h2 class="text-2xl font-semibold mb-4 text-[#041E42]">3. Results</h2>
                 <div id="results" class="text-gray-700">
                     <p>Search results will appear here.</p>
                 </div>
@@ -127,7 +125,7 @@
     <div id="pdf-viewer-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[95vh] flex flex-col">
             <div class="flex justify-between items-center p-4 border-b bg-gray-50 rounded-t-lg">
-                <h3 id="pdf-viewer-title" class="text-xl font-semibold truncate">PDF Viewer</h3>
+                <h3 id="pdf-viewer-title" class="text-xl font-semibold truncate text-[#041E42]">PDF Viewer</h3>
                 <button id="close-modal-btn" class="text-gray-500 hover:text-gray-800 text-3xl font-bold">&times;</button>
             </div>
             <div id="viewer-body" class="flex-grow p-4 overflow-auto bg-gray-200">
@@ -143,7 +141,8 @@
     
     <!-- Footer -->
     <footer class="text-center py-6 mt-8">
-        <p class="text-gray-500">&copy; 2025 PEAK - All Rights Reserved.</p>
+        <p class="text-gray-500">Pharmacy Enforcement Archive of Knowledge</p>
+        <p class="text-sm text-gray-400">&copy; 2025 PEAK</p>
     </footer>
 
     <script>
@@ -154,7 +153,7 @@
                 category: "Acts",
                 files: [
                     { filename: "act-366_2023.pdf", displayName: "Poisons Act 1952" },
-                    { filename: "sales-drug-act-1952-act-368-1.pdf", displayName: "Sale of Drugs Act 1952" },
+                    { filename: "sales-drug-act-1952-act-368.pdf", displayName: "Sale of Drugs Act 1952" },
                     { filename: "medicine-advertisement-sale-act-1956-act-290_2.pdf", displayName: "Medicines (Advertisement and Sale) Act 1956" },
                     { filename: "registration-pharmacists-act-1951-act-371_2.pdf", displayName: "Registration of Pharmacists Act 1951" },
                     { filename: "dangerous-drugs-act-1952-act-234_1.pdf", displayName: "Dangerous Drugs Act 1952" }
@@ -167,7 +166,7 @@
                     { filename: "poisons-psychotropic-substances-regulations-1989-2-0_0.pdf", displayName: "Poisons (Psychotropic Substances) Regulations 1989" },
                     { filename: "poisons-sodium-hydroxide-regulations-1962-0.pdf", displayName: "Poisons (Sodium Hydroxide) Regulations 1962" },
                     { filename: "peraturan-peraturan-racun-pengkompaunan-kesalahan-2023.pdf", displayName: "Peraturan-Peraturan Racun (Pengkompaunan Kesalahan) 2023" },
-                    { filename: "control-drugs-and-cosmetics-regulations-1984-1.pdf", displayName: "Control of Drugs and Cosmetics Regulations 1984" },
+                    { filename: "control-drugs-and-cosmetics-regulations-1984.pdf", displayName: "Control of Drugs and Cosmetics Regulations 1984" },
                     { filename: "medicine-advertisements-board-regulations-1976-19092024_0.pdf", displayName: "Medicines (Advertisement Board) Regulations 1976" },
                     { filename: "registration-pharmacists-regulations-2004_0.pdf", displayName: "Registration of Pharmacists Regulations 2004" },
                     { filename: "dangerous-drugs-regulations-1952-clean.pdf", displayName: "Dangerous Drugs Regulations 1952" }
@@ -208,9 +207,9 @@
             let globalFileIndex = 0;
             for (const category of PDF_CATEGORIES) {
                 const categoryContainer = document.createElement('div');
-                categoryContainer.innerHTML = `<h3 class="text-xl font-semibold text-gray-800 border-b-2 border-blue-200 pb-2 mb-4 col-span-full">${category.category}</h3>`;
+                categoryContainer.innerHTML = `<h3 class="text-xl font-semibold text-[#041E42] border-b-2 border-orange-200 pb-2 mb-4 col-span-full">${category.category}</h3>`;
                 const gridContainer = document.createElement('div');
-                gridContainer.className = "grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-8 justify-items-center";
+                gridContainer.className = "grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-6 gap-y-8 justify-items-center";
                 categoryContainer.appendChild(gridContainer);
                 pdfListCategoriesContainer.appendChild(categoryContainer);
 
@@ -226,18 +225,22 @@
                         canvas.onclick = () => openPdfViewer(currentIndex, 1);
                         
                         const listItem = document.createElement('div');
-                        listItem.className = 'pdf-list-item p-2 text-center w-36';
+                        listItem.className = 'pdf-list-item flex flex-col h-56 w-36'; // Fixed height for alignment
+                        
+                        const canvasWrapper = document.createElement('div');
+                        canvasWrapper.className = "flex-shrink-0";
+                        canvasWrapper.appendChild(canvas);
                         
                         const checkboxContainer = document.createElement('div');
-                        checkboxContainer.className = 'mt-2 text-center';
+                        checkboxContainer.className = 'mt-2 text-center flex-grow flex items-center'; // Center label vertically
                         checkboxContainer.innerHTML = `
                             <label for="pdf-check-${currentIndex}" class="flex items-center justify-center cursor-pointer">
-                                <input type="checkbox" id="pdf-check-${currentIndex}" data-pdf-index="${currentIndex}" class="mr-2 h-4 w-4 accent-blue-600">
+                                <input type="checkbox" id="pdf-check-${currentIndex}" data-pdf-index="${currentIndex}" class="mr-2 h-4 w-4 accent-[#041E42]">
                                 <span class="text-sm break-words">${pdfInfo.displayName}</span>
                             </label>
                         `;
 
-                        listItem.appendChild(canvas);
+                        listItem.appendChild(canvasWrapper);
                         listItem.appendChild(checkboxContainer);
                         gridContainer.appendChild(listItem);
                         
@@ -262,8 +265,8 @@
                     } catch (error) {
                         console.error(`Error loading ${pdfInfo.filename}:`, error);
                         const errorItem = document.createElement('div');
-                        errorItem.className = 'p-2 text-center text-red-600 font-semibold w-36';
-                        errorItem.innerHTML = `<div class="w-full h-48 bg-gray-200 flex items-center justify-center p-2 rounded-md">Failed to load</div><div class="mt-2 text-sm">${pdfInfo.displayName}</div>`;
+                        errorItem.className = 'p-2 text-center text-red-600 font-semibold w-36 h-56';
+                        errorItem.innerHTML = `<div class="w-full h-40 bg-gray-200 flex items-center justify-center p-2 rounded-md">Failed to load</div><div class="mt-2 text-sm">${pdfInfo.displayName}</div>`;
                         gridContainer.appendChild(errorItem);
                     }
                 }
@@ -316,6 +319,8 @@
                 pdf.content.forEach((pageText, pageIndex) => {
                     let match;
                     let pageSnippets = [];
+                    // Reset regex index for each page
+                    regex.lastIndex = 0;
                     while ((match = regex.exec(pageText)) !== null) {
                         if (!foundInFile) foundInFile = true;
                         
@@ -324,9 +329,7 @@
                         const snippetEnd = Math.min(pageText.length, match.index + match[0].length + contextRadius);
                         let snippet = pageText.substring(snippetStart, snippetEnd);
                         
-                        // Use a non-global regex for replacement inside the loop to avoid issues
-                        const highlightRegex = new RegExp(isWholeWord ? `\\b${term}\\b` : term, flags.replace('g', ''));
-                        snippet = snippet.replace(highlightRegex, `<strong class="bg-yellow-300 font-semibold">$&</strong>`);
+                        snippet = snippet.replace(new RegExp(term, flags), `<strong class="bg-[#F27E23] bg-opacity-50 font-semibold">$&</strong>`);
 
                         if (snippetStart > 0) snippet = '... ' + snippet;
                         if (snippetEnd < pageText.length) snippet = snippet + ' ...';
@@ -342,7 +345,7 @@
                         pageHeader.innerHTML = `<p>Found on page <span class="font-bold">${pageNum}</span>:</p>`;
                         const goToPageBtn = document.createElement('button');
                         goToPageBtn.textContent = 'View Page →';
-                        goToPageBtn.className = 'bg-blue-600 text-white font-bold py-1 px-3 rounded-md hover:bg-blue-700 transition text-sm';
+                        goToPageBtn.className = 'bg-[#F27E23] text-white font-bold py-1 px-3 rounded-md hover:bg-opacity-90 transition text-sm';
                         goToPageBtn.onclick = () => openPdfViewer(index, pageNum);
                         pageHeader.appendChild(goToPageBtn);
                         pageResultDiv.appendChild(pageHeader);
@@ -361,7 +364,7 @@
                     const resultDiv = document.createElement('div');
                     resultDiv.className = 'mb-4 p-4 border border-gray-200 rounded-lg';
                     const fileNameHeader = document.createElement('h3');
-                    fileNameHeader.className = 'text-xl font-semibold text-blue-800 mb-2';
+                    fileNameHeader.className = 'text-xl font-semibold text-[#041E42] mb-2';
                     fileNameHeader.textContent = pdf.displayName;
                     resultDiv.appendChild(fileNameHeader);
                     resultDiv.appendChild(fileResultContainer);
