@@ -57,15 +57,12 @@
             overflow: hidden;
             opacity: 1; 
             line-height: 1.0;
-        }
-        .textLayer ::selection {
-            background: rgba(242, 126, 35, 0.4);
+            pointer-events: none; /* Disable text selection */
         }
         .textLayer > span, .textLayer > br {
             color: transparent; 
             position: absolute;
             white-space: pre;
-            cursor: text;
             transform-origin: 0% 0%;
         }
         .highlight-layer {
@@ -78,11 +75,12 @@
         }
         .highlight {
             position: absolute;
-            background-color: transparent;
-            border-bottom: 2px solid #F27E23; /* Orange underline */
+            background-color: #F27E23; /* Orange highlight */
+            opacity: 0.4;
         }
         .highlight.current-match {
-            border-bottom: 2px solid #4285F4; /* Blue underline */
+            background-color: #4285F4; /* Blue highlight */
+            opacity: 0.5;
         }
     </style>
 </head>
@@ -90,7 +88,7 @@
 
     <div class="container mx-auto p-4 md:p-8 max-w-6xl">
         <header class="mb-8">
-             <img src="peak.png" alt="PEAK Logo" class="h-14" title="PEAK | Pharmacy Enforcement Archive of Knowledge">
+             <img src="peak.png" alt="PEAK Logo" class="h-20 w-4/5 sm:w-auto" title="PEAK | Pharmacy Enforcement Archive of Knowledge">
         </header>
 
         <main>
@@ -260,7 +258,7 @@
                 const categoryContainer = document.createElement('div');
                 categoryContainer.innerHTML = `<h3 class="text-xl font-semibold text-[#041E42] border-b-2 border-orange-200 pb-2 mb-4">${category.category}</h3>`;
                 const gridContainer = document.createElement('div');
-                gridContainer.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-6 gap-y-8";
+                gridContainer.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-6";
                 categoryContainer.appendChild(gridContainer);
                 pdfListCategoriesContainer.appendChild(categoryContainer);
 
@@ -270,12 +268,12 @@
                     listItem.className = 'pdf-list-item flex flex-col items-center';
                     listItem.id = `pdf-item-${currentIndex}`;
                     listItem.innerHTML = `
-                        <div class="canvas-container relative w-36 h-48"> <!-- Fixed size container -->
+                        <div class="canvas-container relative w-full" style="padding-top: 141.42%;">
                             <div class="spinner-container absolute inset-0 flex items-center justify-center bg-gray-100 rounded-md">
                                 <div class="h-6 w-6 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
                             </div>
                         </div>
-                        <div class="mt-2 text-center w-36">
+                        <div class="mt-2 text-center w-full">
                             <label for="pdf-check-${currentIndex}" class="flex items-center justify-center cursor-pointer">
                                 <input type="checkbox" id="pdf-check-${currentIndex}" data-pdf-index="${currentIndex}" class="mr-2 h-4 w-4 accent-[#041E42]" onchange="updateSelectionButtons()">
                                 <span class="text-sm break-words">${pdfInfo.displayName}</span>
@@ -328,7 +326,7 @@
                     } catch (error) {
                         console.error(`Error loading ${pdfInfo.filename}:`, error);
                         const listItem = document.getElementById(`pdf-item-${currentIndex}`);
-                        listItem.innerHTML = `<div class="canvas-container w-36 h-48 bg-gray-200 flex items-center justify-center p-2 rounded-md"><span class="text-red-600 font-semibold text-xs text-center">Failed to load</span></div><div class="mt-2 text-sm">${pdfInfo.displayName}</div>`;
+                        listItem.innerHTML = `<div class="canvas-container relative w-full" style="padding-top: 141.42%;"><div class="absolute inset-0 bg-gray-200 flex items-center justify-center p-2 rounded-md"><span class="text-red-600 font-semibold text-xs text-center">Failed to load</span></div></div><div class="mt-2 text-center w-full">${pdfInfo.displayName}</div>`;
                     }
                 }
             }
@@ -545,6 +543,10 @@
             textLayerDiv.style.width = `${viewport.width}px`;
             textLayerDiv.style.height = `${viewport.height}px`;
             pdfjsLib.renderTextLayer({ textContent, container: textLayerDiv, viewport, textDivs: [] });
+
+            const highlightLayer = document.createElement('div');
+            highlightLayer.className = 'highlight-layer';
+            pageContainer.appendChild(highlightLayer);
         }
 
         // --- In-Viewer Search ---
@@ -552,14 +554,10 @@
             viewerSearchState.query = viewerSearchInput.value.trim();
             highlightMatchesInViewer();
         }
-
+        
         async function highlightMatchesInViewer() {
-            document.querySelectorAll('mark').forEach(m => {
-                const parent = m.parentNode;
-                parent.replaceChild(document.createTextNode(m.textContent), m);
-                parent.normalize();
-            });
-
+             document.querySelectorAll('.highlight-layer').forEach(layer => layer.innerHTML = ''); // Clear previous highlights
+            
             if (!viewerSearchState.query) {
                 viewerSearchState.matches = [];
                 updateViewerSearchUI();
@@ -572,29 +570,31 @@
             viewerSearchState.matches = [];
 
             const renderedPages = Array.from(document.querySelectorAll('.page-container[data-rendered="true"]'));
+
             for(const pageContainer of renderedPages) {
-                const textLayer = pageContainer.querySelector('.textLayer');
-                if(!textLayer) continue;
+                 const pageNum = parseInt(pageContainer.dataset.pageNumber);
+                 const page = await viewerSearchState.pdfDoc.getPage(pageNum);
+                 const textContent = await page.getTextContent();
+                 const viewport = page.getViewport({scale: 1.5});
+                 const highlightLayer = pageContainer.querySelector('.highlight-layer');
 
-                const pageNum = parseInt(pageContainer.dataset.pageNumber);
-                const textSpans = Array.from(textLayer.querySelectorAll('span'));
-
-                textSpans.forEach(span => {
-                    let match;
-                    const textNode = span.firstChild;
-                    if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return;
-                    regex.lastIndex = 0; // Reset for each text node
-                    while ((match = regex.exec(textNode.textContent)) !== null) {
-                        const mark = document.createElement('mark');
-                        mark.textContent = match[0];
-                        
-                        const after = textNode.splitText(match.index);
-                        after.textContent = after.textContent.substring(match[0].length);
-                        textNode.parentNode.insertBefore(mark, after);
-                        
-                        viewerSearchState.matches.push({ pageNum, element: mark });
+                 let combinedText = textContent.items.map(item => item.str).join('');
+                 let match;
+                 regex.lastIndex = 0;
+                 while((match = regex.exec(combinedText))) {
+                    const textItem = findTextItemForMatch(textContent.items, match.index, match[0].length);
+                    if (textItem) {
+                        const tx = pdfjsLib.Util.transform(viewport.transform, textItem.transform);
+                        const highlight = document.createElement('div');
+                        highlight.className = 'highlight';
+                        highlight.style.left = `${tx[4]}px`;
+                        highlight.style.top = `${tx[5]}px`;
+                        highlight.style.width = `${textItem.width}px`;
+                        highlight.style.height = `${textItem.height}px`;
+                        highlightLayer.appendChild(highlight);
+                        viewerSearchState.matches.push({ pageNum, element: highlight });
                     }
-                });
+                 }
             }
             
             viewerSearchState.currentMatchIndex = -1;
@@ -602,6 +602,17 @@
             if (viewerSearchState.matches.length > 0) {
                 goToNextMatch();
             }
+        }
+
+        function findTextItemForMatch(items, startIndex, length) {
+             let charCount = 0;
+             for(const item of items) {
+                if(charCount >= startIndex && charCount < startIndex + length) {
+                    return item;
+                }
+                charCount += item.str.length;
+             }
+             return null;
         }
         
         function goToNextMatch() {
@@ -623,7 +634,7 @@
         }
 
         function navigateToMatch(matchIndex) {
-            document.querySelectorAll('mark.current-match').forEach(m => m.classList.remove('current-match'));
+            document.querySelectorAll('.highlight.current-match').forEach(m => m.classList.remove('current-match'));
 
             const match = viewerSearchState.matches[matchIndex];
             const targetElement = match.element;
