@@ -68,14 +68,21 @@
             cursor: text;
             transform-origin: 0% 0%;
         }
-        mark {
-            background-color: transparent;
-            text-decoration: underline;
-            text-decoration-color: #F27E23; /* Orange underline */
-            text-decoration-thickness: 2px;
+        .highlight-layer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
         }
-        mark.current-match {
-            text-decoration-color: #4285F4; /* Blue underline */
+        .highlight {
+            position: absolute;
+            background-color: transparent;
+            border-bottom: 2px solid #F27E23; /* Orange underline */
+        }
+        .highlight.current-match {
+            border-bottom: 2px solid #4285F4; /* Blue underline */
         }
     </style>
 </head>
@@ -92,9 +99,9 @@
                 <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
                     <h2 class="text-2xl font-semibold text-[#041E42]">1. Select Documents</h2>
                     <div class="flex gap-2 flex-wrap">
-                        <button id="toggle-thumbnails-btn" class="text-sm bg-gray-200 text-gray-700 font-semibold py-1 px-3 rounded-md hover:bg-gray-300">Toggle Thumbnails</button>
-                        <button id="select-all-btn" class="text-sm bg-[#F27E23] text-white font-semibold py-1 px-3 rounded-md hover:bg-opacity-90">Select All</button>
-                        <button id="deselect-all-btn" class="text-sm bg-gray-200 text-gray-700 font-semibold py-1 px-3 rounded-md hover:bg-gray-300">Deselect All</button>
+                        <button id="toggle-thumbnails-btn" class="text-sm font-semibold py-1 px-3 rounded-md transition-colors">Toggle Thumbnails</button>
+                        <button id="select-all-btn" class="text-sm font-semibold py-1 px-3 rounded-md transition-colors">Select All</button>
+                        <button id="deselect-all-btn" class="text-sm font-semibold py-1 px-3 rounded-md transition-colors">Deselect All</button>
                     </div>
                 </div>
                 <div id="initial-loader-container" class="text-center my-4">
@@ -124,7 +131,10 @@
                             <span class="ml-2 text-gray-700">Match whole word only</span>
                         </label>
                     </div>
-                    <button id="search-btn" class="bg-[#041E42] text-white font-bold py-3 px-8 rounded-lg hover:bg-opacity-90 transition disabled:bg-gray-400" disabled>Search</button>
+                    <div class="flex items-center gap-4">
+                        <span id="main-search-count" class="text-gray-600 text-sm font-semibold"></span>
+                        <button id="search-btn" class="bg-[#041E42] text-white font-bold py-3 px-8 rounded-lg hover:bg-opacity-90 transition disabled:bg-gray-400" disabled>Search</button>
+                    </div>
                 </div>
             </div>
 
@@ -204,6 +214,7 @@
         const pdfListCategoriesContainer = document.getElementById('pdf-list-categories');
         const searchInput = document.getElementById('search-input');
         const searchBtn = document.getElementById('search-btn');
+        const mainSearchCount = document.getElementById('main-search-count');
         const clearSearchBtn = document.getElementById('clear-search-btn');
         const selectAllBtn = document.getElementById('select-all-btn');
         const deselectAllBtn = document.getElementById('deselect-all-btn');
@@ -212,7 +223,6 @@
         const wholeWordCheck = document.getElementById('whole-word-check');
         const resultsContainer = document.getElementById('results');
         const initialLoader = document.getElementById('initial-loader-container');
-        const loadingStatus = document.getElementById('loading-status');
         const modal = document.getElementById('pdf-viewer-modal');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const pdfViewerTitle = document.getElementById('pdf-viewer-title');
@@ -241,7 +251,7 @@
         async function initializeApp() {
             let totalFiles = PDF_CATEGORIES.flatMap(c => c.files).length;
             if (totalFiles === 0) {
-                loadingStatus.textContent = 'No PDFs configured.';
+                initialLoader.innerHTML = '<p class="text-red-600">No PDFs configured.</p>';
                 return;
             }
 
@@ -257,16 +267,15 @@
                 category.files.forEach(pdfInfo => {
                     const currentIndex = globalFileIndex++;
                     const listItem = document.createElement('div');
-                    listItem.className = 'pdf-list-item flex flex-col';
+                    listItem.className = 'pdf-list-item flex flex-col items-center';
                     listItem.id = `pdf-item-${currentIndex}`;
                     listItem.innerHTML = `
-                        <div class="canvas-container relative w-full" style="padding-top: 141.42%;">
-                            <canvas class="cursor-pointer absolute top-0 left-0 w-full h-full"></canvas>
+                        <div class="canvas-container relative w-36 h-48"> <!-- Fixed size container -->
                             <div class="spinner-container absolute inset-0 flex items-center justify-center bg-gray-100 rounded-md">
                                 <div class="h-6 w-6 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
                             </div>
                         </div>
-                        <div class="mt-2 text-center flex-grow flex items-center justify-center">
+                        <div class="mt-2 text-center w-36">
                             <label for="pdf-check-${currentIndex}" class="flex items-center justify-center cursor-pointer">
                                 <input type="checkbox" id="pdf-check-${currentIndex}" data-pdf-index="${currentIndex}" class="mr-2 h-4 w-4 accent-[#041E42]" onchange="updateSelectionButtons()">
                                 <span class="text-sm break-words">${pdfInfo.displayName}</span>
@@ -280,6 +289,7 @@
             initialLoader.classList.add('hidden');
             searchBtn.disabled = false;
             updateSelectionButtons();
+            updateThumbnailButtonState();
 
             globalFileIndex = 0;
             for (const category of PDF_CATEGORIES) {
@@ -289,7 +299,9 @@
                         const pdfDoc = await pdfjsLib.getDocument(pdfInfo.filename).promise;
                         const page = await pdfDoc.getPage(1);
                         const listItem = document.getElementById(`pdf-item-${currentIndex}`);
-                        const canvas = listItem.querySelector('canvas');
+                        const canvas = document.createElement('canvas');
+                        canvas.className = 'cursor-pointer absolute top-0 left-0 w-full h-full object-contain';
+                        listItem.querySelector('.canvas-container').appendChild(canvas);
                         
                         canvas.onclick = () => openPdfViewer(currentIndex, 1);
                         const viewport = page.getViewport({ scale: 1.0 });
@@ -316,29 +328,40 @@
                     } catch (error) {
                         console.error(`Error loading ${pdfInfo.filename}:`, error);
                         const listItem = document.getElementById(`pdf-item-${currentIndex}`);
-                        listItem.innerHTML = `<div class="canvas-container relative w-full" style="padding-top: 141.42%;"><div class="absolute inset-0 bg-gray-200 flex items-center justify-center p-2 rounded-md"><span class="text-red-600 font-semibold text-xs">Failed</span></div></div><div class="mt-2 text-sm">${pdfInfo.displayName}</div>`;
+                        listItem.innerHTML = `<div class="canvas-container w-36 h-48 bg-gray-200 flex items-center justify-center p-2 rounded-md"><span class="text-red-600 font-semibold text-xs text-center">Failed to load</span></div><div class="mt-2 text-sm">${pdfInfo.displayName}</div>`;
                     }
                 }
             }
         }
 
+        // --- UI State Functions ---
         function updateSelectionButtons() {
             const checkboxes = document.querySelectorAll('#pdf-list-categories input[type="checkbox"]');
             const checkedCount = document.querySelectorAll('#pdf-list-categories input[type="checkbox"]:checked').length;
             const totalCount = checkboxes.length;
 
-            if (checkedCount === totalCount) {
-                selectAllBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                deselectAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else if (checkedCount === 0) {
-                deselectAllBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                selectAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            if (checkedCount === 0) {
+                selectAllBtn.className = "text-sm bg-[#F27E23] text-white font-semibold py-1 px-3 rounded-md hover:bg-opacity-90 transition-colors";
+                deselectAllBtn.className = "text-sm bg-gray-200 text-gray-700 font-semibold py-1 px-3 rounded-md transition-colors opacity-50 cursor-not-allowed";
+            } else if (checkedCount === totalCount) {
+                selectAllBtn.className = "text-sm bg-gray-200 text-gray-700 font-semibold py-1 px-3 rounded-md transition-colors opacity-50 cursor-not-allowed";
+                deselectAllBtn.className = "text-sm bg-[#F27E23] text-white font-semibold py-1 px-3 rounded-md hover:bg-opacity-90 transition-colors";
             } else {
-                selectAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                deselectAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                selectAllBtn.className = "text-sm bg-gray-200 text-gray-700 font-semibold py-1 px-3 rounded-md hover:bg-gray-300 transition-colors";
+                deselectAllBtn.className = "text-sm bg-gray-200 text-gray-700 font-semibold py-1 px-3 rounded-md hover:bg-gray-300 transition-colors";
+            }
+        }
+        
+        function updateThumbnailButtonState() {
+            const isHidden = document.getElementById('document-selection').classList.contains('thumbnails-hidden');
+            if (isHidden) {
+                 toggleThumbnailsBtn.className = "text-sm bg-[#F27E23] text-white font-semibold py-1 px-3 rounded-md hover:bg-opacity-90 transition-colors";
+            } else {
+                 toggleThumbnailsBtn.className = "text-sm bg-gray-200 text-gray-700 font-semibold py-1 px-3 rounded-md hover:bg-gray-300 transition-colors";
             }
         }
 
+        // --- Event Listeners for Buttons ---
         selectAllBtn.addEventListener('click', () => {
             document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
             updateSelectionButtons();
@@ -351,15 +374,18 @@
 
         toggleThumbnailsBtn.addEventListener('click', () => {
             document.getElementById('document-selection').classList.toggle('thumbnails-hidden');
+            updateThumbnailButtonState();
         });
 
         searchInput.addEventListener('input', () => {
             clearSearchBtn.classList.toggle('hidden', !searchInput.value);
+            if(!searchInput.value) mainSearchCount.textContent = '';
         });
 
         clearSearchBtn.addEventListener('click', () => {
             searchInput.value = '';
             resultsContainer.innerHTML = '<p>Search results will appear here.</p>';
+            mainSearchCount.textContent = '';
             clearSearchBtn.classList.add('hidden');
         });
 
@@ -375,17 +401,20 @@
 
             if (!query) {
                 resultsContainer.innerHTML = '<p>Please enter a search term.</p>';
+                mainSearchCount.textContent = '';
                 return;
             }
             
             const selectedPdfIndexes = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt(cb.dataset.pdfIndex));
             if (selectedPdfIndexes.length === 0) {
                 resultsContainer.innerHTML = '<p>Please select at least one document.</p>';
+                mainSearchCount.textContent = '';
                 return;
             }
 
             resultsContainer.innerHTML = '';
             let foundResults = false;
+            let totalMatches = 0;
             
             const flags = isCaseSensitive ? 'g' : 'gi';
             const term = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -403,6 +432,7 @@
                     regex.lastIndex = 0;
                     while ((match = regex.exec(pageText)) !== null) {
                         if (!foundInFile) foundInFile = true;
+                        totalMatches++;
                         const contextRadius = 70;
                         const snippetStart = Math.max(0, match.index - contextRadius);
                         const snippetEnd = Math.min(pageText.length, match.index + match[0].length + contextRadius);
@@ -451,6 +481,9 @@
 
             if (!foundResults) {
                 resultsContainer.innerHTML = '<p>No results found for your query in the selected documents.</p>';
+                mainSearchCount.textContent = '0 matches';
+            } else {
+                 mainSearchCount.textContent = `${totalMatches} matches found`;
             }
         }
         
@@ -534,7 +567,7 @@
             };
 
             const term = viewerSearchState.query;
-            const flags = "gi"; // Always case-insensitive for viewer
+            const flags = "gi";
             const regex = new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), flags);
             viewerSearchState.matches = [];
 
@@ -548,9 +581,9 @@
 
                 textSpans.forEach(span => {
                     let match;
-                    const textNode = span.firstChild; // Assuming text is the first child
+                    const textNode = span.firstChild;
                     if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return;
-
+                    regex.lastIndex = 0; // Reset for each text node
                     while ((match = regex.exec(textNode.textContent)) !== null) {
                         const mark = document.createElement('mark');
                         mark.textContent = match[0];
@@ -560,7 +593,6 @@
                         textNode.parentNode.insertBefore(mark, after);
                         
                         viewerSearchState.matches.push({ pageNum, element: mark });
-                        regex.lastIndex = 0;
                     }
                 });
             }
