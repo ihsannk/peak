@@ -69,23 +69,23 @@
             transform-origin: 0% 0%;
         }
         mark {
-            background-color: rgba(242, 126, 35, 0.5); /* Orange highlight */
+            background-color: transparent;
+            text-decoration: underline;
+            text-decoration-color: #F27E23; /* Orange underline */
+            text-decoration-thickness: 2px;
         }
         mark.current-match {
-            background-color: rgba(67, 185, 255, 0.7); /* Blue highlight for current match */
+            text-decoration-color: #4285F4; /* Blue underline */
         }
     </style>
 </head>
 <body class="text-gray-800">
 
-    <!-- Header -->
-    <header class="bg-white shadow-md">
-        <div class="container mx-auto px-4 md:px-8 py-3">
-             <img src="peak.png" alt="PEAK Logo" class="h-14" title="PEAK | Pharmacy Enforcement Archive of Knowledge">
-        </div>
-    </header>
-
     <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+        <header class="mb-8">
+             <img src="peak.png" alt="PEAK Logo" class="h-14" title="PEAK | Pharmacy Enforcement Archive of Knowledge">
+        </header>
+
         <main>
             <!-- PDF Selection Section -->
             <div id="document-selection" class="bg-white p-6 rounded-lg shadow-lg mb-8">
@@ -246,7 +246,6 @@
             }
 
             let globalFileIndex = 0;
-            // Create placeholders first for better perceived performance
             PDF_CATEGORIES.forEach(category => {
                 const categoryContainer = document.createElement('div');
                 categoryContainer.innerHTML = `<h3 class="text-xl font-semibold text-[#041E42] border-b-2 border-orange-200 pb-2 mb-4">${category.category}</h3>`;
@@ -261,7 +260,7 @@
                     listItem.className = 'pdf-list-item flex flex-col';
                     listItem.id = `pdf-item-${currentIndex}`;
                     listItem.innerHTML = `
-                        <div class="canvas-container relative w-full" style="padding-top: 141.42%;"> <!-- A4 Aspect Ratio -->
+                        <div class="canvas-container relative w-full" style="padding-top: 141.42%;">
                             <canvas class="cursor-pointer absolute top-0 left-0 w-full h-full"></canvas>
                             <div class="spinner-container absolute inset-0 flex items-center justify-center bg-gray-100 rounded-md">
                                 <div class="h-6 w-6 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
@@ -269,7 +268,7 @@
                         </div>
                         <div class="mt-2 text-center flex-grow flex items-center justify-center">
                             <label for="pdf-check-${currentIndex}" class="flex items-center justify-center cursor-pointer">
-                                <input type="checkbox" id="pdf-check-${currentIndex}" data-pdf-index="${currentIndex}" class="mr-2 h-4 w-4 accent-[#041E42]">
+                                <input type="checkbox" id="pdf-check-${currentIndex}" data-pdf-index="${currentIndex}" class="mr-2 h-4 w-4 accent-[#041E42]" onchange="updateSelectionButtons()">
                                 <span class="text-sm break-words">${pdfInfo.displayName}</span>
                             </label>
                         </div>
@@ -279,7 +278,8 @@
             });
 
             initialLoader.classList.add('hidden');
-            searchBtn.disabled = false; // Enable search button early
+            searchBtn.disabled = false;
+            updateSelectionButtons();
 
             globalFileIndex = 0;
             for (const category of PDF_CATEGORIES) {
@@ -316,19 +316,37 @@
                     } catch (error) {
                         console.error(`Error loading ${pdfInfo.filename}:`, error);
                         const listItem = document.getElementById(`pdf-item-${currentIndex}`);
-                        listItem.innerHTML = `<div class="w-full h-full bg-gray-200 flex items-center justify-center p-2 rounded-md"><span class="text-red-600 font-semibold">Failed to load</span></div><div class="mt-2 text-sm">${pdfInfo.displayName}</div>`;
+                        listItem.innerHTML = `<div class="canvas-container relative w-full" style="padding-top: 141.42%;"><div class="absolute inset-0 bg-gray-200 flex items-center justify-center p-2 rounded-md"><span class="text-red-600 font-semibold text-xs">Failed</span></div></div><div class="mt-2 text-sm">${pdfInfo.displayName}</div>`;
                     }
                 }
             }
         }
 
-        // --- Event Listeners for Buttons ---
+        function updateSelectionButtons() {
+            const checkboxes = document.querySelectorAll('#pdf-list-categories input[type="checkbox"]');
+            const checkedCount = document.querySelectorAll('#pdf-list-categories input[type="checkbox"]:checked').length;
+            const totalCount = checkboxes.length;
+
+            if (checkedCount === totalCount) {
+                selectAllBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                deselectAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else if (checkedCount === 0) {
+                deselectAllBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                selectAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                selectAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                deselectAllBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
         selectAllBtn.addEventListener('click', () => {
             document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+            updateSelectionButtons();
         });
 
         deselectAllBtn.addEventListener('click', () => {
             document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateSelectionButtons();
         });
 
         toggleThumbnailsBtn.addEventListener('click', () => {
@@ -348,7 +366,7 @@
         searchBtn.addEventListener('click', performSearch);
         searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); });
         
-        // --- Search Logic ---
+        // --- Main Search Logic ---
         function performSearch() {
             currentSearchQuery = searchInput.value;
             const isCaseSensitive = caseSensitiveCheck.checked;
@@ -496,28 +514,44 @@
             pdfjsLib.renderTextLayer({ textContent, container: textLayerDiv, viewport, textDivs: [] });
         }
 
-        function highlightMatchesInViewer() {
-            // Clear previous highlights
+        // --- In-Viewer Search ---
+        async function searchInViewer() {
+            viewerSearchState.query = viewerSearchInput.value.trim();
+            highlightMatchesInViewer();
+        }
+
+        async function highlightMatchesInViewer() {
             document.querySelectorAll('mark').forEach(m => {
                 const parent = m.parentNode;
                 parent.replaceChild(document.createTextNode(m.textContent), m);
-                parent.normalize(); // Merge adjacent text nodes
+                parent.normalize();
             });
 
-            if (!viewerSearchState.query) return;
+            if (!viewerSearchState.query) {
+                viewerSearchState.matches = [];
+                updateViewerSearchUI();
+                return;
+            };
 
-            const flags = "gi"; // Viewer search is always case-insensitive for simplicity
-            const term = viewerSearchState.query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-            const regex = new RegExp(term, flags);
+            const term = viewerSearchState.query;
+            const flags = "gi"; // Always case-insensitive for viewer
+            const regex = new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), flags);
             viewerSearchState.matches = [];
 
-            document.querySelectorAll('.textLayer').forEach((textLayer, pageIndex) => {
-                 const pageNum = pageIndex + 1;
-                 const textNodes = Array.from(textLayer.querySelectorAll('span')).flatMap(span => Array.from(span.childNodes).filter(node => node.nodeType === Node.TEXT_NODE));
+            const renderedPages = Array.from(document.querySelectorAll('.page-container[data-rendered="true"]'));
+            for(const pageContainer of renderedPages) {
+                const textLayer = pageContainer.querySelector('.textLayer');
+                if(!textLayer) continue;
 
-                 textNodes.forEach(textNode => {
+                const pageNum = parseInt(pageContainer.dataset.pageNumber);
+                const textSpans = Array.from(textLayer.querySelectorAll('span'));
+
+                textSpans.forEach(span => {
                     let match;
-                    while((match = regex.exec(textNode.textContent)) !== null) {
+                    const textNode = span.firstChild; // Assuming text is the first child
+                    if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return;
+
+                    while ((match = regex.exec(textNode.textContent)) !== null) {
                         const mark = document.createElement('mark');
                         mark.textContent = match[0];
                         
@@ -526,18 +560,13 @@
                         textNode.parentNode.insertBefore(mark, after);
                         
                         viewerSearchState.matches.push({ pageNum, element: mark });
-                        regex.lastIndex = 0; // Reset for next node
+                        regex.lastIndex = 0;
                     }
-                 });
-            });
+                });
+            }
             
             viewerSearchState.currentMatchIndex = -1;
             updateViewerSearchUI();
-        }
-
-        function searchInViewer() {
-            viewerSearchState.query = viewerSearchInput.value.trim();
-            highlightMatchesInViewer();
             if (viewerSearchState.matches.length > 0) {
                 goToNextMatch();
             }
@@ -547,7 +576,7 @@
             if (viewerSearchState.matches.length === 0) return;
             viewerSearchState.currentMatchIndex++;
             if(viewerSearchState.currentMatchIndex >= viewerSearchState.matches.length) {
-                viewerSearchState.currentMatchIndex = 0; // Wrap around
+                viewerSearchState.currentMatchIndex = 0;
             }
             navigateToMatch(viewerSearchState.currentMatchIndex);
         }
@@ -556,13 +585,12 @@
             if (viewerSearchState.matches.length === 0) return;
             viewerSearchState.currentMatchIndex--;
             if(viewerSearchState.currentMatchIndex < 0) {
-                viewerSearchState.currentMatchIndex = viewerSearchState.matches.length - 1; // Wrap around
+                viewerSearchState.currentMatchIndex = viewerSearchState.matches.length - 1;
             }
              navigateToMatch(viewerSearchState.currentMatchIndex);
         }
 
         function navigateToMatch(matchIndex) {
-            // Remove highlight from previous match
             document.querySelectorAll('mark.current-match').forEach(m => m.classList.remove('current-match'));
 
             const match = viewerSearchState.matches[matchIndex];
