@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Search Engine</title>
+    <title>PEAK - Pharmacy Enforcement Archive of Knowledge</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PDF.js library from Mozilla -->
@@ -12,9 +12,10 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
         }
         #loader {
-            border-top-color: #3498db;
+            border-top-color: #2563eb;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
@@ -22,50 +23,77 @@
         }
         .pdf-list-item canvas {
             border: 1px solid #e2e8f0;
-            border-radius: 0.25rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .pdf-list-item:hover canvas {
+            transform: translateY(-5px);
+        }
+        #pdf-viewer-canvas-container {
+            position: relative;
         }
         #pdf-canvas {
             max-width: 100%;
             height: auto;
-            border: 1px solid #ccc;
+            border: 1px solid #d1d5db;
+        }
+        /* Styles for the selectable text layer */
+        .textLayer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0.2;
+            line-height: 1.0;
+        }
+        .textLayer > span {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="text-gray-800">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
-        <!-- Header Section -->
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">PDF Search Engine</h1>
-            <p class="text-lg text-gray-600">Select the PDFs you want to include and search for content within them.</p>
-        </header>
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-4 md:px-8 py-4">
+            <h1 class="text-3xl font-bold text-blue-700">PEAK</h1>
+            <p class="text-md text-gray-600">Pharmacy Enforcement Archive of Knowledge</p>
+        </div>
+    </header>
 
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
         <main>
             <!-- PDF Selection Section -->
-            <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-                <h2 class="text-2xl font-semibold mb-2">1. Select PDFs to Search</h2>
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">1. Select Documents to Search</h2>
                 <div id="initial-loader-container" class="text-center my-4">
-                    <div id="loader" class="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500"></div>
-                    <p id="loading-status" class="mt-2 text-gray-600">Loading available PDFs...</p>
+                    <div id="loader" class="mx-auto h-10 w-10"></div>
+                    <p id="loading-status" class="mt-2 text-gray-600">Loading available documents...</p>
                 </div>
-                <div id="pdf-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                <div id="pdf-list" class="flex flex-wrap gap-6 justify-center">
                     <!-- PDF thumbnails and checkboxes will be inserted here by JavaScript -->
                 </div>
             </div>
 
             <!-- Search Section -->
-            <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-                <h2 class="text-2xl font-semibold mb-4">2. Search Content</h2>
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">2. Search Content</h2>
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <input type="text" id="search-input" placeholder="Enter search term..." class="flex-grow w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button id="search-btn" class="w-full sm:w-auto bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400" disabled>Search</button>
+                    <input type="text" id="search-input" placeholder="Enter search term..." class="flex-grow w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="search-btn" class="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400" disabled>Search</button>
                 </div>
             </div>
 
             <!-- Results Section -->
-            <div id="results-container" class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-2xl font-semibold mb-4">3. Results</h2>
+            <div id="results-container" class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">3. Results</h2>
                 <div id="results" class="text-gray-700">
                     <p>Search results will appear here.</p>
                 </div>
@@ -74,59 +102,70 @@
     </div>
 
     <!-- PDF Viewer Modal -->
-    <div id="pdf-viewer-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center p-4 border-b">
+    <div id="pdf-viewer-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[95vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b bg-gray-50 rounded-t-lg">
                 <h3 id="pdf-viewer-title" class="text-xl font-semibold truncate">PDF Viewer</h3>
                 <button id="close-modal-btn" class="text-gray-500 hover:text-gray-800 text-3xl font-bold">&times;</button>
             </div>
-            <div class="flex-grow p-4 overflow-auto text-center bg-gray-200">
-                <canvas id="pdf-canvas"></canvas>
+            <div class="flex-grow p-4 overflow-auto bg-gray-200">
+                <div id="pdf-viewer-canvas-container">
+                    <canvas id="pdf-canvas"></canvas>
+                </div>
             </div>
-            <div class="flex justify-center items-center p-4 border-t gap-4">
+            <div class="flex justify-center items-center p-4 border-t gap-4 bg-gray-50 rounded-b-lg">
                 <button id="prev-page-btn" class="bg-gray-300 px-4 py-2 rounded-lg hover:bg-gray-400 disabled:opacity-50" disabled>Previous</button>
                 <span>Page <span id="page-num">0</span> / <span id="page-count">0</span></span>
                 <button id="next-page-btn" class="bg-gray-300 px-4 py-2 rounded-lg hover:bg-gray-400 disabled:opacity-50" disabled>Next</button>
             </div>
         </div>
     </div>
+    
+    <!-- Footer -->
+    <footer class="text-center py-6 mt-8">
+        <p class="text-gray-500">&copy; 2024 PEAK - All Rights Reserved.</p>
+    </footer>
 
 
     <script>
         // Set the workerSrc for PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
 
-        // --- CONFIGURATION ---
-        // Add the filenames of the PDFs you want to include here.
-        // Make sure these PDF files are in the SAME FOLDER as this HTML file.
         const PDF_FILES = [
             "act-366_2023.pdf",
-            "poison-regulations-1952_3.pdf"
+            "control-drugs-and-cosmetics-regulations-1984 (1).pdf",
+            "dangerous-drugs-act-1952-act-234_1.pdf",
+            "dangerous-drugs-regulations-1952-clean.pdf",
+            "medicine-advertisement-sale-act-1956-act-290_2.pdf",
+            "medicine-advertisements-board-regulations-1976-19092024_0.pdf",
+            "peraturan-peraturan-racun-pengkompaunan-kesalahan-2023.pdf",
+            "poison-regulations-1952_3.pdf",
+            "poisons-psychotropic-substances-regulations-1989-2-0_0.pdf",
+            "poisons-sodium-hydroxide-regulations-1962-0.pdf",
+            "registration-pharmacists-act-1951-act-371_2.pdf",
+            "registration-pharmacists-regulations-2004_0.pdf",
+            "sales-drug-act-1952-act-368 (1).pdf"
         ];
 
-        // --- DOM Elements ---
         const pdfListContainer = document.getElementById('pdf-list');
         const searchInput = document.getElementById('search-input');
         const searchBtn = document.getElementById('search-btn');
         const resultsContainer = document.getElementById('results');
         const initialLoader = document.getElementById('initial-loader-container');
         const loadingStatus = document.getElementById('loading-status');
-        
-        // Modal DOM Elements
         const modal = document.getElementById('pdf-viewer-modal');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const pdfViewerTitle = document.getElementById('pdf-viewer-title');
+        const canvasContainer = document.getElementById('pdf-viewer-canvas-container');
         const pdfCanvas = document.getElementById('pdf-canvas');
         const pageNumSpan = document.getElementById('page-num');
         const pageCountSpan = document.getElementById('page-count');
         const prevPageBtn = document.getElementById('prev-page-btn');
         const nextPageBtn = document.getElementById('next-page-btn');
 
-        // --- State Variables ---
-        let pdfData = []; // To store file info, extracted text, and the PDF document object
-        let currentPdf = { doc: null, pageNum: 1 }; // State for the PDF viewer
+        let pdfData = [];
+        let currentPdf = { doc: null, pageNum: 1 };
 
-        // --- Initial Loading Logic ---
         document.addEventListener('DOMContentLoaded', initializeApp);
 
         async function initializeApp() {
@@ -140,29 +179,25 @@
                 loadingStatus.textContent = `Loading ${filename} (${i+1}/${PDF_FILES.length})...`;
                 try {
                     const pdfDoc = await pdfjsLib.getDocument(filename).promise;
-                    
-                    // Create thumbnail
                     const page = await pdfDoc.getPage(1);
-                    const viewport = page.getViewport({ scale: 0.5 });
+                    const viewport = page.getViewport({ scale: 0.4 });
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
                     canvas.height = viewport.height;
                     canvas.width = viewport.width;
                     await page.render({ canvasContext: context, viewport: viewport }).promise;
 
-                    // Create list item
                     const listItem = document.createElement('div');
-                    listItem.classList.add('pdf-list-item', 'p-2', 'text-center');
+                    listItem.classList.add('pdf-list-item', 'p-2', 'text-center', 'w-40');
                     listItem.innerHTML = `
                         ${canvas.outerHTML}
                         <div class="mt-2 flex items-center justify-center">
-                            <input type="checkbox" id="pdf-check-${i}" data-pdf-index="${i}" class="mr-2 h-4 w-4">
-                            <label for="pdf-check-${i}" class="text-sm truncate">${filename}</label>
+                            <input type="checkbox" id="pdf-check-${i}" data-pdf-index="${i}" class="mr-2 h-4 w-4 accent-blue-600">
+                            <label for="pdf-check-${i}" class="text-sm truncate cursor-pointer">${filename}</label>
                         </div>
                     `;
                     pdfListContainer.appendChild(listItem);
                     
-                    // Extract text for searching
                     let extractedText = [];
                     for (let j = 1; j <= pdfDoc.numPages; j++) {
                         const textPage = await pdfDoc.getPage(j);
@@ -170,11 +205,10 @@
                         extractedText.push(textContent.items.map(item => item.str).join(' '));
                     }
                     pdfData.push({ name: filename, content: extractedText, doc: pdfDoc });
-
                 } catch (error) {
                     console.error(`Error loading ${filename}:`, error);
                     const errorItem = document.createElement('div');
-                    errorItem.classList.add('p-2', 'text-center', 'text-red-500');
+                    errorItem.classList.add('p-2', 'text-center', 'text-red-600', 'font-semibold');
                     errorItem.textContent = `Failed to load: ${filename}`;
                     pdfListContainer.appendChild(errorItem);
                 }
@@ -183,36 +217,29 @@
             searchBtn.disabled = false;
         }
 
-        // --- Search Logic ---
         searchBtn.addEventListener('click', performSearch);
         searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); });
 
         function performSearch() {
             const query = searchInput.value.trim().toLowerCase();
-            const selectedPdfIndexes = Array.from(document.querySelectorAll('#pdf-list input[type="checkbox"]:checked'))
-                                             .map(cb => parseInt(cb.dataset.pdfIndex));
-
+            const selectedPdfIndexes = Array.from(document.querySelectorAll('#pdf-list input[type="checkbox"]:checked')).map(cb => parseInt(cb.dataset.pdfIndex));
             if (!query || selectedPdfIndexes.length === 0) {
-                resultsContainer.innerHTML = '<p>Please enter a search term and select at least one PDF.</p>';
+                resultsContainer.innerHTML = '<p>Please enter a search term and select at least one document.</p>';
                 return;
             }
 
             resultsContainer.innerHTML = '';
             let foundResults = false;
-            
             selectedPdfIndexes.forEach(index => {
                 const pdf = pdfData[index];
                 if (!pdf) return;
-
                 const fileResultContainer = document.createElement('div');
                 let foundInFile = false;
-
                 pdf.content.forEach((pageText, pageIndex) => {
                     const lowerPageText = pageText.toLowerCase();
                     const pageNum = pageIndex + 1;
                     let startIndex = 0;
                     let pageSnippets = [];
-
                     while ((startIndex = lowerPageText.indexOf(query, startIndex)) !== -1) {
                         foundInFile = true;
                         const contextRadius = 70;
@@ -221,27 +248,23 @@
                         const originalTerm = pageText.substring(startIndex, startIndex + query.length);
                         let snippet = pageText.substring(snippetStart, snippetEnd);
                         const escapedTerm = originalTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-                        snippet = snippet.replace(new RegExp(escapedTerm, 'gi'), `<strong class="bg-yellow-200 font-semibold">${originalTerm}</strong>`);
+                        snippet = snippet.replace(new RegExp(escapedTerm, 'gi'), `<strong class="bg-yellow-300 font-semibold">${originalTerm}</strong>`);
                         if (snippetStart > 0) snippet = '... ' + snippet;
                         if (snippetEnd < pageText.length) snippet = snippet + ' ...';
                         pageSnippets.push(snippet);
                         startIndex += query.length;
                     }
-
                     if (pageSnippets.length > 0) {
                         const pageResultDiv = document.createElement('div');
-                        pageResultDiv.classList.add('mt-2', 'pl-4', 'border-l-2', 'border-gray-200');
-
+                        pageResultDiv.classList.add('mt-3', 'pl-4', 'border-l-4', 'border-gray-200');
                         const pageHeader = document.createElement('div');
                         pageHeader.classList.add('flex', 'justify-between', 'items-center');
                         pageHeader.innerHTML = `<p>Found on page <span class="font-bold">${pageNum}</span>:</p>`;
-
                         const goToPageBtn = document.createElement('button');
                         goToPageBtn.textContent = 'View Page →';
-                        goToPageBtn.classList.add('bg-green-600', 'text-white', 'font-bold', 'py-1', 'px-3', 'rounded-md', 'hover:bg-green-700', 'transition', 'text-sm');
+                        goToPageBtn.classList.add('bg-blue-600', 'text-white', 'font-bold', 'py-1', 'px-3', 'rounded-md', 'hover:bg-blue-700', 'transition', 'text-sm');
                         goToPageBtn.onclick = () => openPdfViewer(index, pageNum);
                         pageHeader.appendChild(goToPageBtn);
-
                         pageResultDiv.appendChild(pageHeader);
                         pageSnippets.forEach(snippetText => {
                             const snippetP = document.createElement('p');
@@ -252,37 +275,31 @@
                         fileResultContainer.appendChild(pageResultDiv);
                     }
                 });
-
                 if (foundInFile) {
                     foundResults = true;
                     const resultDiv = document.createElement('div');
-                    resultDiv.classList.add('mb-4', 'p-4', 'border', 'border-gray-200', 'rounded-lg', 'shadow-sm');
+                    resultDiv.classList.add('mb-4', 'p-4', 'border', 'border-gray-200', 'rounded-lg');
                     const fileNameHeader = document.createElement('h3');
-                    fileNameHeader.classList.add('text-lg', 'font-semibold', 'text-blue-700', 'mb-2');
+                    fileNameHeader.classList.add('text-xl', 'font-semibold', 'text-blue-800', 'mb-2');
                     fileNameHeader.textContent = pdf.name;
                     resultDiv.appendChild(fileNameHeader);
                     resultDiv.appendChild(fileResultContainer);
                     resultsContainer.appendChild(resultDiv);
                 }
             });
-
             if (!foundResults) {
-                resultsContainer.innerHTML = '<p>No results found for your query in the selected PDFs.</p>';
+                resultsContainer.innerHTML = '<p>No results found for your query in the selected documents.</p>';
             }
         }
 
-        // --- PDF Viewer Logic ---
         function openPdfViewer(pdfIndex, pageNumToShow) {
             const pdfItem = pdfData[pdfIndex];
             if (!pdfItem) return;
-
             currentPdf.doc = pdfItem.doc;
             currentPdf.pageNum = pageNumToShow;
-
             pdfViewerTitle.textContent = pdfItem.name;
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            
             pageCountSpan.textContent = currentPdf.doc.numPages;
             renderPage(currentPdf.pageNum);
         }
@@ -298,6 +315,29 @@
             pageNumSpan.textContent = num;
             prevPageBtn.disabled = (num <= 1);
             nextPageBtn.disabled = (num >= currentPdf.doc.numPages);
+            
+            // Render Text Layer for text selection
+            // Clear previous text layer if it exists
+            const existingTextLayer = document.getElementById('textLayer');
+            if(existingTextLayer) {
+                existingTextLayer.remove();
+            }
+
+            const textLayerDiv = document.createElement('div');
+            textLayerDiv.setAttribute('id', 'textLayer');
+            textLayerDiv.setAttribute('class', 'textLayer');
+            canvasContainer.appendChild(textLayerDiv);
+            
+            textLayerDiv.style.width = `${viewport.width}px`;
+            textLayerDiv.style.height = `${viewport.height}px`;
+
+            const textContent = await page.getTextContent();
+            pdfjsLib.renderTextLayer({
+                textContent: textContent,
+                container: textLayerDiv,
+                viewport: viewport,
+                textDivs: []
+            });
         }
 
         closeModalBtn.addEventListener('click', () => {
@@ -317,7 +357,6 @@
             currentPdf.pageNum++;
             renderPage(currentPdf.pageNum);
         });
-
     </script>
 </body>
 </html>
