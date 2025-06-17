@@ -131,9 +131,12 @@
         // Set the workerSrc for PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
 
+        // --- CONFIGURATION ---
+        // IMPORTANT: For best results on a web server, rename your PDF files to avoid spaces or special characters like ( ).
+        // For example, rename "file (1).pdf" to "file-1.pdf".
         const PDF_FILES = [
             "act-366_2023.pdf",
-            "control-drugs-and-cosmetics-regulations-1984 (1).pdf",
+            "control-drugs-and-cosmetics-regulations-1984.pdf",
             "dangerous-drugs-act-1952-act-234_1.pdf",
             "dangerous-drugs-regulations-1952-clean.pdf",
             "medicine-advertisement-sale-act-1956-act-290_2.pdf",
@@ -144,9 +147,7 @@
             "poisons-sodium-hydroxide-regulations-1962-0.pdf",
             "registration-pharmacists-act-1951-act-371_2.pdf",
             "registration-pharmacists-regulations-2004_0.pdf",
-            "sales-drug-act-1952-act-368 (1).pdf",
-            "Garis Panduan Pendakwaan (edaran Disember 2023).pdf",
-            "garis_panduan_penyiasatan_untuk_pegawai_penguatkuasa_farmasi_22_julai_2020_1.pdf"
+            "sales-drug-act-1952-act-368.pdf"
         ];
 
         const pdfListContainer = document.getElementById('pdf-list');
@@ -187,19 +188,30 @@
                     const context = canvas.getContext('2d');
                     canvas.height = viewport.height;
                     canvas.width = viewport.width;
-                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    
+                    // Add click event to canvas to open PDF
+                    canvas.classList.add('cursor-pointer');
+                    canvas.onclick = () => openPdfViewer(i, 1);
 
                     const listItem = document.createElement('div');
-                    listItem.classList.add('pdf-list-item', 'p-2', 'text-center');
-                    listItem.innerHTML = `
-                        ${canvas.outerHTML}
-                        <div class="mt-2 text-center">
-                            <input type="checkbox" id="pdf-check-${i}" data-pdf-index="${i}" class="mr-2 h-4 w-4 align-middle accent-blue-600">
-                            <label for="pdf-check-${i}" class="text-sm break-words align-middle cursor-pointer">${filename}</label>
-                        </div>
+                    listItem.classList.add('pdf-list-item', 'p-2', 'text-center', 'w-36'); // Made boxes smaller
+                    
+                    const checkboxContainer = document.createElement('div');
+                    checkboxContainer.classList.add('mt-2', 'text-center');
+                    checkboxContainer.innerHTML = `
+                        <label for="pdf-check-${i}" class="flex items-center justify-center cursor-pointer">
+                            <input type="checkbox" id="pdf-check-${i}" data-pdf-index="${i}" class="mr-2 h-4 w-4 accent-blue-600">
+                            <span class="text-sm break-words">${filename}</span>
+                        </label>
                     `;
+
+                    listItem.appendChild(canvas);
+                    listItem.appendChild(checkboxContainer);
                     pdfListContainer.appendChild(listItem);
                     
+                    // Now render the PDF page onto the canvas that is in the DOM
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+
                     let extractedText = [];
                     for (let j = 1; j <= pdfDoc.numPages; j++) {
                         const textPage = await pdfDoc.getPage(j);
@@ -207,11 +219,12 @@
                         extractedText.push(textContent.items.map(item => item.str).join(' '));
                     }
                     pdfData.push({ name: filename, content: extractedText, doc: pdfDoc });
+
                 } catch (error) {
                     console.error(`Error loading ${filename}:`, error);
                     const errorItem = document.createElement('div');
-                    errorItem.classList.add('p-2', 'text-center', 'text-red-600', 'font-semibold');
-                    errorItem.textContent = `Failed to load: ${filename}`;
+                    errorItem.classList.add('p-2', 'text-center', 'text-red-600', 'font-semibold', 'w-36');
+                    errorItem.innerHTML = `<div class="w-full h-48 bg-gray-200 flex items-center justify-center p-2 rounded-md">Failed to load</div><div class="mt-2 text-sm">${filename}</div>`;
                     pdfListContainer.appendChild(errorItem);
                 }
             }
@@ -319,7 +332,6 @@
             nextPageBtn.disabled = (num >= currentPdf.doc.numPages);
             
             // Render Text Layer for text selection
-            // Clear previous text layer if it exists
             const existingTextLayer = document.getElementById('textLayer');
             if(existingTextLayer) {
                 existingTextLayer.remove();
