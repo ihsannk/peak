@@ -1,14 +1,11 @@
 <!DOCTYPE html>
-<!-- Author: Ihsan Norkhair -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PEAK - Pharmacy Enforcement Archive of Knowledge</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PDF.js library from Mozilla -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -38,36 +35,6 @@
         .thumbnails-hidden .pdf-list-item .canvas-container {
             display: none;
         }
-        #pdf-viewer-canvas-container .page-container {
-            position: relative;
-            margin-bottom: 1rem;
-            background-color: white;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-        #pdf-viewer-canvas-container canvas {
-            max-width: 100%;
-            height: auto;
-        }
-        .textLayer {
-            position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-            opacity: 1; 
-            line-height: 1.0;
-        }
-        .textLayer ::selection {
-            background: rgba(242, 126, 35, 0.4);
-        }
-        .textLayer > span, .textLayer > br {
-            color: transparent; 
-            position: absolute;
-            white-space: pre;
-            cursor: text;
-            transform-origin: 0% 0%;
-        }
         mark {
             background-color: rgba(242, 126, 35, 0.5); /* Orange highlight */
             color: transparent;
@@ -85,7 +52,6 @@
         </header>
 
         <main>
-            <!-- PDF Selection Section -->
             <div id="document-selection" class="bg-white p-6 rounded-lg shadow-lg mb-8">
                 <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
                     <h2 class="text-2xl font-semibold text-[#041E42]">1. Select Documents</h2>
@@ -100,11 +66,9 @@
                     <p id="loading-status" class="mt-2 text-gray-600">Loading available documents...</p>
                 </div>
                 <div id="pdf-list-categories">
-                    <!-- Categories and PDF thumbnails will be inserted here -->
-                </div>
+                    </div>
             </div>
 
-            <!-- Search Section -->
             <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
                 <h2 class="text-2xl font-semibold mb-4 text-[#041E42]">2. Search Content</h2>
                 <div class="relative">
@@ -129,7 +93,6 @@
                 </div>
             </div>
 
-            <!-- Results Section -->
             <div id="results-container" class="bg-white p-6 rounded-lg shadow-lg">
                 <h2 class="text-2xl font-semibold mb-4 text-[#041E42]">3. Results</h2>
                 <div id="results" class="text-gray-700">
@@ -139,33 +102,17 @@
         </main>
     </div>
 
-    <!-- PDF Viewer Modal -->
-    <div id="pdf-viewer-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[95vh] flex flex-col">
-            <div class="flex justify-between items-center p-4 border-b bg-gray-50 rounded-t-lg">
-                <h3 id="pdf-viewer-title" class="text-xl font-semibold truncate text-[#041E42]">PDF Viewer</h3>
+    <div id="pdf-viewer-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-1 md:p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full h-full flex flex-col">
+            <div class="flex justify-between items-center p-2 border-b bg-gray-100 rounded-t-lg flex-shrink-0">
+                <h3 id="pdf-viewer-title" class="text-lg font-semibold truncate text-[#041E42] ml-2">PDF Viewer</h3>
                 <button id="close-modal-btn" class="text-gray-500 hover:text-gray-800 text-3xl font-bold">&times;</button>
             </div>
-            <div id="viewer-body" class="flex-grow p-4 overflow-auto bg-gray-200">
-                <div id="pdf-viewer-canvas-container" class="text-center">
-                    <!-- Canvases for each page will be appended here -->
+            <div id="viewer-iframe-container" class="w-full h-full flex-grow">
                 </div>
-            </div>
-            <div class="flex justify-between items-center p-2 border-t gap-4 bg-gray-50 rounded-b-lg">
-                 <div class="relative flex-grow ml-2">
-                    <input type="text" id="viewer-search-input" placeholder="Search in document..." class="w-full text-sm px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#041E42]">
-                 </div>
-                 <div class="flex items-center gap-2">
-                    <button id="viewer-prev-btn" class="text-sm bg-gray-300 px-2 py-1 rounded disabled:opacity-50">&lt;</button>
-                    <button id="viewer-next-btn" class="text-sm bg-gray-300 px-2 py-1 rounded disabled:opacity-50">&gt;</button>
-                    <span id="viewer-match-count" class="text-sm text-gray-600 w-20 text-center">0 / 0</span>
-                 </div>
-                 <span class="text-sm text-gray-600 mr-2">Page <span id="page-num">0</span> / <span id="page-count">0</span></span>
-            </div>
         </div>
     </div>
     
-    <!-- Footer -->
     <footer class="text-center py-6 mt-8">
         <p class="text-gray-500">Pharmacy Enforcement Archive of Knowledge</p>
         <p class="text-sm text-gray-400">&copy; 2025 PEAK</p>
@@ -175,6 +122,8 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
 
         // --- CONFIGURATION ---
+        // The URL to the generic PDF.js viewer. Can be self-hosted or from a public source.
+        const PDF_VIEWER_URL = 'https://mozilla.github.io/pdf.js/web/viewer.html';
         const PDF_CATEGORIES = [
             {
                 category: "Acts",
@@ -222,25 +171,11 @@
         const modal = document.getElementById('pdf-viewer-modal');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const pdfViewerTitle = document.getElementById('pdf-viewer-title');
-        const viewerBody = document.getElementById('viewer-body');
-        const canvasContainer = document.getElementById('pdf-viewer-canvas-container');
-        const pageNumSpan = document.getElementById('page-num');
-        const pageCountSpan = document.getElementById('page-count');
-        const viewerSearchInput = document.getElementById('viewer-search-input');
-        const viewerPrevBtn = document.getElementById('viewer-prev-btn');
-        const viewerNextBtn = document.getElementById('viewer-next-btn');
-        const viewerMatchCount = document.getElementById('viewer-match-count');
+        const iframeContainer = document.getElementById('viewer-iframe-container');
 
         // --- State Variables ---
         let pdfData = [];
-        let viewerObserver;
         let currentSearchQuery = '';
-        let viewerSearchState = {
-            matches: [],
-            currentMatchIndex: -1,
-            pdfDoc: null,
-            query: ''
-        };
 
         document.addEventListener('DOMContentLoaded', initializeApp);
 
@@ -317,8 +252,8 @@
                         pdfData[currentIndex] = { 
                             name: pdfInfo.filename, 
                             displayName: pdfInfo.displayName, 
-                            content: extractedText, 
-                            doc: pdfDoc 
+                            content: extractedText,
+                            // We don't need to store the full doc object anymore for the new viewer
                         };
 
                     } catch (error) {
@@ -486,192 +421,53 @@
             }
         }
         
-        // --- PDF Viewer Logic ---
-        async function openPdfViewer(pdfIndex, pageNumToShow) {
+        // --- NEW PDF Viewer Logic (Iframe) ---
+        function openPdfViewer(pdfIndex, pageNumToShow) {
             const pdfItem = pdfData[pdfIndex];
             if (!pdfItem) return;
-            
-            resetViewerSearchState(pdfItem.doc);
+
+            // Set the title in our custom header
             pdfViewerTitle.textContent = pdfItem.displayName;
-            pageCountSpan.textContent = pdfItem.doc.numPages;
+
+            // Construct the full, absolute URL to the PDF file
+            const pdfUrl = new URL(pdfItem.name, window.location.href).href;
+
+            // Construct the URL for the viewer, passing the PDF file as a parameter
+            let viewerUrl = `${PDF_VIEWER_URL}?file=${encodeURIComponent(pdfUrl)}`;
+
+            // Add URL hash parameters to control the viewer's state on load
+            const hashParams = [];
+            if (pageNumToShow) {
+                hashParams.push(`page=${pageNumToShow}`);
+            }
+            if (currentSearchQuery) {
+                // The default viewer uses 'search' and 'phrase' hash parameters
+                hashParams.push(`search=${encodeURIComponent(currentSearchQuery)}`);
+                hashParams.push(`phrase=${wholeWordCheck.checked}`);
+            }
+
+            if (hashParams.length > 0) {
+                viewerUrl += `#${hashParams.join('&')}`;
+            }
+
+            // Create and configure the iframe
+            iframeContainer.innerHTML = ''; // Clear previous iframe if any
+            const iframe = document.createElement('iframe');
+            iframe.src = viewerUrl;
+            iframe.className = 'w-full h-full border-0';
+            iframeContainer.appendChild(iframe);
+            
+            // Show the modal
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            canvasContainer.innerHTML = '';
-
-            for (let i = 1; i <= pdfItem.doc.numPages; i++) {
-                const pageContainer = document.createElement('div');
-                pageContainer.className = 'page-container';
-                pageContainer.dataset.pageNumber = i;
-                canvasContainer.appendChild(pageContainer);
-            }
-            
-            setTimeout(() => {
-                const targetPage = document.querySelector(`.page-container[data-page-number="${pageNumToShow}"]`);
-                if (targetPage) viewerBody.scrollTop = targetPage.offsetTop - 20;
-            }, 100);
-
-            viewerObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const pageNum = parseInt(entry.target.dataset.pageNumber);
-                        const pageContainer = entry.target;
-                        if (!pageContainer.dataset.rendered) {
-                            pageContainer.dataset.rendered = "true";
-                            renderLazyPage(pdfItem.doc, pageNum, pageContainer);
-                        }
-                        pageNumSpan.textContent = pageNum;
-                    }
-                });
-            }, { root: viewerBody, threshold: 0.1 });
-
-            document.querySelectorAll('.page-container').forEach(pc => viewerObserver.observe(pc));
         }
 
-        async function renderLazyPage(pdfDoc, pageNum, pageContainer) {
-            const page = await pdfDoc.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1.5 });
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            pageContainer.appendChild(canvas);
-            await page.render({ canvasContext: context, viewport: viewport }).promise;
-
-            const textContent = await page.getTextContent();
-            const textLayerDiv = document.createElement('div');
-            textLayerDiv.className = 'textLayer';
-            pageContainer.appendChild(textLayerDiv);
-            textLayerDiv.style.width = `${viewport.width}px`;
-            textLayerDiv.style.height = `${viewport.height}px`;
-            pdfjsLib.renderTextLayer({ textContent, container: textLayerDiv, viewport, textDivs: [] });
-
-            const highlightLayer = document.createElement('div');
-            highlightLayer.className = 'highlight-layer';
-            pageContainer.appendChild(highlightLayer);
-        }
-
-        // --- In-Viewer Search ---
-        async function searchInViewer() {
-            viewerSearchState.query = viewerSearchInput.value.trim();
-            highlightMatchesInViewer();
-        }
-        
-        async function highlightMatchesInViewer() {
-             document.querySelectorAll('.highlight-layer').forEach(layer => layer.innerHTML = '');
-            
-            if (!viewerSearchState.query) {
-                viewerSearchState.matches = [];
-                updateViewerSearchUI();
-                return;
-            };
-
-            const term = viewerSearchState.query;
-            const flags = "gi";
-            const regex = new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), flags);
-            viewerSearchState.matches = [];
-
-            const renderedPages = Array.from(document.querySelectorAll('.page-container[data-rendered="true"]'));
-
-            for(const pageContainer of renderedPages) {
-                const pageNum = parseInt(pageContainer.dataset.pageNumber);
-                const page = await viewerSearchState.pdfDoc.getPage(pageNum);
-                const textContent = await page.getTextContent();
-                const viewport = page.getViewport({scale: 1.5});
-                const highlightLayer = pageContainer.querySelector('.highlight-layer');
-
-                let fullText = '';
-                const textItems = textContent.items.map(item => {
-                    const str = item.str;
-                    const textStart = fullText.length;
-                    fullText += str;
-                    return { ...item, textStart };
-                });
-
-                let match;
-                regex.lastIndex = 0;
-                while((match = regex.exec(fullText))) {
-                    const matchStart = match.index;
-                    const matchEnd = matchStart + match[0].length;
-                    
-                    const relevantItems = textItems.filter(item => {
-                        const itemEnd = item.textStart + item.str.length;
-                        return item.textStart < matchEnd && itemEnd > matchStart;
-                    });
-                    
-                    for(const item of relevantItems) {
-                        const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
-                        const highlight = document.createElement('div');
-                        highlight.className = 'highlight';
-                        highlight.style.left = `${tx[4]}px`;
-                        highlight.style.top = `${tx[5]}px`;
-                        highlight.style.width = `${item.width}px`;
-                        highlight.style.height = `${item.height}px`;
-                        highlightLayer.appendChild(highlight);
-                        viewerSearchState.matches.push({ pageNum, element: highlight });
-                    }
-                }
-            }
-            
-            viewerSearchState.currentMatchIndex = -1;
-            updateViewerSearchUI();
-            if (viewerSearchState.matches.length > 0) {
-                goToNextMatch();
-            }
-        }
-        
-        function goToNextMatch() {
-            if (viewerSearchState.matches.length === 0) return;
-            viewerSearchState.currentMatchIndex++;
-            if(viewerSearchState.currentMatchIndex >= viewerSearchState.matches.length) {
-                viewerSearchState.currentMatchIndex = 0;
-            }
-            navigateToMatch(viewerSearchState.currentMatchIndex);
-        }
-
-        function goToPrevMatch() {
-            if (viewerSearchState.matches.length === 0) return;
-            viewerSearchState.currentMatchIndex--;
-            if(viewerSearchState.currentMatchIndex < 0) {
-                viewerSearchState.currentMatchIndex = viewerSearchState.matches.length - 1;
-            }
-             navigateToMatch(viewerSearchState.currentMatchIndex);
-        }
-
-        function navigateToMatch(matchIndex) {
-            document.querySelectorAll('.highlight.current-match').forEach(m => m.classList.remove('current-match'));
-
-            const match = viewerSearchState.matches[matchIndex];
-            const targetElement = match.element;
-            targetElement.classList.add('current-match');
-            targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            updateViewerSearchUI();
-        }
-
-        function updateViewerSearchUI() {
-            const total = viewerSearchState.matches.length;
-            const current = viewerSearchState.currentMatchIndex + 1;
-            viewerMatchCount.textContent = `${total > 0 ? current : 0} / ${total}`;
-            viewerNextBtn.disabled = total === 0;
-            viewerPrevBtn.disabled = total === 0;
-        }
-
-        function resetViewerSearchState(pdfDoc = null) {
-            viewerSearchInput.value = '';
-            viewerSearchState = { matches: [], currentMatchIndex: -1, pdfDoc, query: '' };
-            updateViewerSearchUI();
-        }
-        
-        viewerSearchInput.addEventListener('keydown', e => {
-            if(e.key === 'Enter') searchInViewer();
-        });
-        viewerNextBtn.addEventListener('click', goToNextMatch);
-        viewerPrevBtn.addEventListener('click', goToPrevMatch);
-        
+        // Add event listener for the modal's close button
         closeModalBtn.addEventListener('click', () => {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
-            if (viewerObserver) viewerObserver.disconnect();
-            resetViewerSearchState();
+            // Important: Clear the iframe to stop the PDF from running in the background
+            iframeContainer.innerHTML = '';
         });
     </script>
 </body>
