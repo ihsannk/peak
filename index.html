@@ -57,7 +57,6 @@
             overflow: hidden;
             opacity: 1; 
             line-height: 1.0;
-            pointer-events: none;
         }
         .textLayer ::selection {
             background: rgba(242, 126, 35, 0.4);
@@ -66,23 +65,15 @@
             color: transparent; 
             position: absolute;
             white-space: pre;
+            cursor: text;
             transform-origin: 0% 0%;
         }
-        .highlight-layer {
-            position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
+        mark {
+            background-color: rgba(242, 126, 35, 0.5); /* Orange highlight */
+            color: transparent;
         }
-        .highlight {
-            position: absolute;
-            background-color: transparent;
-            border-bottom: 2px solid #F27E23; /* Orange underline */
-        }
-        .highlight.current-match {
-            border-bottom: 3px solid #4285F4; /* Blue underline */
+        mark.current-match {
+            background-color: rgba(67, 185, 255, 0.7); /* Blue highlight for current match */
         }
     </style>
 </head>
@@ -193,9 +184,11 @@
                     { filename: "medicine-advertisement-sale-act-1956-act-290_2.pdf", displayName: "Medicines (Advertisement and Sale) Act 1956" },
                     { filename: "registration-pharmacists-act-1951-act-371_2.pdf", displayName: "Registration of Pharmacists Act 1951" },
                     { filename: "dangerous-drugs-act-1952-act-234_1.pdf", displayName: "Dangerous Drugs Act 1952" },
-					{ filename: "Act-593-CPC-17.5.2018.pdf", displayName: "Criminal Procedure Code" },
-					{ filename: "Act-56-Evidence-Act-2017.pdf", displayName: "Evidence Act 1950" },
-					{ filename: "Act-574-Penal-Code.pdf", displayName: "Penal Code" }
+                    { filename: "Act-593-CPC-17.5.2018.pdf", displayName: "Criminal Procedure Code" },
+                    { filename: "Act-56-Evidence-Act-2017.pdf", displayName: "Evidence Act 1950" },
+                    { filename: "Act-574-Penal-Code.pdf", displayName: "Penal Code" },
+                    { filename: "STA2010_2023.pdf", displayName: "Strategic Trade Act 2010"},
+                    { filename: "act723.pdf", displayName: "Price Control and Anti-Profiteering Act 2011"}
                 ]
             },
             {
