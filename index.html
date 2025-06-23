@@ -9,6 +9,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f4f8;
@@ -42,6 +45,21 @@
         mark.current-match {
             background-color: rgba(67, 185, 255, 0.7); /* Blue highlight for current match */
         }
+        /* --- Improvement 6b: Styles for Collapsible Sections on Mobile --- */
+        @media (max-width: 767px) {
+            .collapsible-content {
+                display: none;
+            }
+            .collapsible-section.open .collapsible-content {
+                display: block;
+            }
+            .collapsible-section.open .chevron-down {
+                display: none;
+            }
+            .collapsible-section:not(.open) .chevron-up {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body class="text-gray-800">
@@ -52,57 +70,76 @@
         </header>
 
         <main>
-            <div id="document-selection" class="bg-white p-6 rounded-lg shadow-lg mb-8">
-                <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+            <div id="document-selection" class="bg-white p-6 rounded-lg shadow-lg mb-8 collapsible-section open">
+                <button class="w-full flex justify-between items-center text-left md:hidden mb-4">
                     <h2 class="text-2xl font-semibold text-[#041E42]">1. Select Documents</h2>
-                    <div class="flex gap-2 flex-wrap">
-                        <button id="toggle-thumbnails-btn" class="text-sm font-semibold py-1 px-3 rounded-md transition-colors">Toggle Thumbnails</button>
-                        <button id="select-all-btn" class="text-sm font-semibold py-1 px-3 rounded-md transition-colors">Select All</button>
-                        <button id="deselect-all-btn" class="text-sm font-semibold py-1 px-3 rounded-md transition-colors">Deselect All</button>
-                    </div>
-                </div>
-                <div id="initial-loader-container" class="text-center my-4">
-                    <div id="loader" class="mx-auto h-10 w-10"></div>
-                    <p id="loading-status" class="mt-2 text-gray-600">Loading available documents...</p>
-                </div>
-                <div id="pdf-list-categories">
-                    </div>
-            </div>
+                    <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                    <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
+                </button>
 
-            <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
-                <h2 class="text-2xl font-semibold mb-4 text-[#041E42]">2. Search Content</h2>
-                <div class="relative">
-                    <input type="text" id="search-input" placeholder="Enter search term..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#041E42]">
-                    <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden text-2xl font-bold">&times;</button>
-                </div>
-                <div class="flex justify-between items-center mt-4">
-                    <div class="flex gap-6">
-                        <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" id="case-sensitive-check" class="h-4 w-4 accent-[#041E42]">
-                            <span class="ml-2 text-gray-700">Case-sensitive</span>
-                        </label>
-                        <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" id="whole-word-check" class="h-4 w-4 accent-[#041E42]">
-                            <span class="ml-2 text-gray-700">Match whole word only</span>
-                        </label>
+                <div class="collapsible-content">
+                    <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+                        <h2 class="text-2xl font-semibold text-[#041E42] hidden md:block">1. Select Documents</h2>
+                        <div class="flex gap-2 flex-wrap">
+                            <button id="toggle-thumbnails-btn" class="text-sm font-semibold py-1 px-3 rounded-md transition-colors">Toggle Thumbnails</button>
+                            <button id="select-all-btn" class="text-sm font-semibold py-1 px-3 rounded-md transition-colors">Select All</button>
+                            <button id="deselect-all-btn" class="text-sm font-semibold py-1 px-3 rounded-md transition-colors">Deselect All</button>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <span id="main-search-count" class="text-gray-600 text-sm font-semibold"></span>
-                        <button id="search-btn" class="bg-[#041E42] text-white font-bold py-3 px-8 rounded-lg hover:bg-opacity-90 transition disabled:bg-gray-400" disabled>Search</button>
+                    <div id="initial-loader-container" class="text-center my-4">
+                        <p class="mt-2 text-gray-600">Loading document list...</p>
                     </div>
+                    <div id="pdf-list-categories">
+                        </div>
                 </div>
             </div>
 
-            <div id="results-container" class="bg-white p-6 rounded-lg shadow-lg">
-                <h2 class="text-2xl font-semibold mb-4 text-[#041E42]">3. Results</h2>
-                <div id="results" class="text-gray-700">
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-8 collapsible-section open">
+                 <button class="w-full flex justify-between items-center text-left md:hidden mb-4">
+                    <h2 class="text-2xl font-semibold text-[#041E42]">2. Search Content</h2>
+                    <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                    <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
+                </button>
+                <div class="collapsible-content">
+                    <h2 class="text-2xl font-semibold mb-4 text-[#041E42] hidden md:block">2. Search Content</h2>
+                    <div class="relative">
+                        <input type="text" id="search-input" placeholder="Enter search term..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#041E42]">
+                        <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden text-2xl font-bold">&times;</button>
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                        <div class="flex gap-6">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="case-sensitive-check" class="h-4 w-4 accent-[#041E42]">
+                                <span class="ml-2 text-gray-700">Case-sensitive</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="whole-word-check" class="h-4 w-4 accent-[#041E42]">
+                                <span class="ml-2 text-gray-700">Match whole word only</span>
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span id="main-search-count" class="text-gray-600 text-sm font-semibold"></span>
+                            <button id="search-btn" class="bg-[#041E42] text-white font-bold py-3 px-8 rounded-lg hover:bg-opacity-90 transition disabled:bg-gray-400">Search</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-container" class="bg-white p-6 rounded-lg shadow-lg collapsible-section open">
+                 <button class="w-full flex justify-between items-center text-left md:hidden mb-4">
+                    <h2 class="text-2xl font-semibold text-[#041E42]">3. Results</h2>
+                    <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                    <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
+                </button>
+                <div id="results" class="collapsible-content text-gray-700">
+                     <h2 class="text-2xl font-semibold mb-4 text-[#041E42] hidden md:block">3. Results</h2>
                     <p>Search results will appear here.</p>
                 </div>
             </div>
         </main>
     </div>
 
-    <div id="pdf-viewer-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-1 md:p-4 z-50">
+    <div id="pdf-viewer-modal" role="dialog" aria-modal="true" aria-labelledby="pdf-viewer-title" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-1 md:p-4 z-50">
         <div class="bg-white rounded-lg shadow-xl w-full h-full flex flex-col">
             <div class="flex justify-between items-center p-2 border-b bg-gray-100 rounded-t-lg flex-shrink-0">
                 <h3 id="pdf-viewer-title" class="text-lg font-semibold truncate text-[#041E42] ml-2">PDF Viewer</h3>
@@ -118,14 +155,21 @@
         <p class="text-sm text-gray-400">&copy; 2025 PEAK</p>
     </footer>
 
+    <button id="back-to-top-btn" title="Back to Top" class="hidden fixed bottom-5 right-5 bg-[#041E42] text-white rounded-full p-3 shadow-lg hover:bg-opacity-90 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+        </svg>
+    </button>
+
+
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
 
         // --- CONFIGURATION ---
-        // The URL to the generic PDF.js viewer. Can be self-hosted or from a public source.
         const PDF_VIEWER_URL = 'https://mozilla.github.io/pdf.js/web/viewer.html';
         const PDF_CATEGORIES = [
-            {
+            // ... (Categories remain the same)
+             {
                 category: "Acts",
                 files: [
                     { filename: "act-366_2023.pdf", displayName: "Poisons Act 1952" },
@@ -172,20 +216,25 @@
         const closeModalBtn = document.getElementById('close-modal-btn');
         const pdfViewerTitle = document.getElementById('pdf-viewer-title');
         const iframeContainer = document.getElementById('viewer-iframe-container');
+        const backToTopBtn = document.getElementById('back-to-top-btn');
 
         // --- State Variables ---
+        // Improvement 1b: pdfData now only stores metadata initially. 'content' is loaded on demand.
         let pdfData = [];
         let currentSearchQuery = '';
 
         document.addEventListener('DOMContentLoaded', initializeApp);
 
-        async function initializeApp() {
-            let totalFiles = PDF_CATEGORIES.flatMap(c => c.files).length;
-            if (totalFiles === 0) {
-                initialLoader.innerHTML = '<p class="text-red-600">No PDFs configured.</p>';
-                return;
-            }
+        function initializeApp() {
+            populatePdfList();
+            setupEventListeners();
+            updateSelectionButtons();
+            updateThumbnailButtonState();
+            initialLoader.classList.add('hidden');
+            searchBtn.disabled = false;
+        }
 
+        function populatePdfList() {
             let globalFileIndex = 0;
             PDF_CATEGORIES.forEach(category => {
                 const categoryContainer = document.createElement('div');
@@ -197,9 +246,21 @@
 
                 category.files.forEach(pdfInfo => {
                     const currentIndex = globalFileIndex++;
+                    // Improvement 1b: 'content' is null initially.
+                    pdfData.push({ 
+                        name: pdfInfo.filename, 
+                        displayName: pdfInfo.displayName, 
+                        content: null,
+                        isExtracting: false // Flag to prevent multiple extractions
+                    });
+
                     const listItem = document.createElement('div');
+                    // Improvement 1a: Add data attributes for lazy loading state.
                     listItem.className = 'pdf-list-item flex flex-col items-center';
                     listItem.id = `pdf-item-${currentIndex}`;
+                    listItem.dataset.pdfIndex = currentIndex;
+                    listItem.dataset.thumbnailLoaded = 'false';
+
                     listItem.innerHTML = `
                         <div class="canvas-container relative w-full" style="padding-top: 141.42%;">
                             <div class="spinner-container absolute inset-0 flex items-center justify-center bg-gray-100 rounded-md">
@@ -216,52 +277,87 @@
                     gridContainer.appendChild(listItem);
                 });
             });
+            // Improvement 1a: Set up Intersection Observer for lazy loading.
+            setupIntersectionObserver();
+        }
 
-            initialLoader.classList.add('hidden');
-            searchBtn.disabled = false;
-            updateSelectionButtons();
-            updateThumbnailButtonState();
-
-            globalFileIndex = 0;
-            for (const category of PDF_CATEGORIES) {
-                for (const pdfInfo of category.files) {
-                    const currentIndex = globalFileIndex++;
-                    try {
-                        const pdfDoc = await pdfjsLib.getDocument(pdfInfo.filename).promise;
-                        const page = await pdfDoc.getPage(1);
-                        const listItem = document.getElementById(`pdf-item-${currentIndex}`);
-                        const canvas = document.createElement('canvas');
-                        canvas.className = 'cursor-pointer absolute top-0 left-0 w-full h-full object-contain';
-                        listItem.querySelector('.canvas-container').appendChild(canvas);
-                        
-                        canvas.onclick = () => openPdfViewer(currentIndex, 1);
-                        const viewport = page.getViewport({ scale: 1.0 });
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-                        const context = canvas.getContext('2d');
-                        await page.render({ canvasContext: context, viewport: viewport }).promise;
-                        
-                        listItem.querySelector('.spinner-container').remove();
-
-                        let extractedText = [];
-                        for (let j = 1; j <= pdfDoc.numPages; j++) {
-                            const textPage = await pdfDoc.getPage(j);
-                            const textContent = await textPage.getTextContent();
-                            extractedText.push(textContent.items.map(item => item.str).join(' '));
+        // --- Improvement 1a: Lazy Loading Logic ---
+        function setupIntersectionObserver() {
+            const options = {
+                rootMargin: '0px',
+                threshold: 0.1
+            };
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const listItem = entry.target;
+                        if (listItem.dataset.thumbnailLoaded === 'false') {
+                            const pdfIndex = parseInt(listItem.dataset.pdfIndex);
+                            loadPdfThumbnail(pdfIndex);
+                            listItem.dataset.thumbnailLoaded = 'true';
                         }
-                        pdfData[currentIndex] = { 
-                            name: pdfInfo.filename, 
-                            displayName: pdfInfo.displayName, 
-                            content: extractedText,
-                            // We don't need to store the full doc object anymore for the new viewer
-                        };
-
-                    } catch (error) {
-                        console.error(`Error loading ${pdfInfo.filename}:`, error);
-                        const listItem = document.getElementById(`pdf-item-${currentIndex}`);
-                        listItem.innerHTML = `<div class="canvas-container relative w-full" style="padding-top: 141.42%;"><div class="absolute inset-0 bg-gray-200 flex items-center justify-center p-2 rounded-md"><span class="text-red-600 font-semibold text-xs text-center">Failed to load</span></div></div><div class="mt-2 text-center w-full">${pdfInfo.displayName}</div>`;
+                        observer.unobserve(listItem); // Stop observing once loaded
                     }
+                });
+            }, options);
+
+            document.querySelectorAll('.pdf-list-item').forEach(item => {
+                observer.observe(item);
+            });
+        }
+
+        async function loadPdfThumbnail(pdfIndex) {
+            const pdfInfo = pdfData[pdfIndex];
+            const listItem = document.getElementById(`pdf-item-${pdfIndex}`);
+            const spinnerContainer = listItem.querySelector('.spinner-container');
+            
+            // Improvement 2b: A simple progress indicator (the spinner) is active during load.
+            try {
+                const pdfDoc = await pdfjsLib.getDocument(pdfInfo.name).promise;
+                const page = await pdfDoc.getPage(1);
+                const canvas = document.createElement('canvas');
+                canvas.className = 'cursor-pointer absolute top-0 left-0 w-full h-full object-contain';
+                listItem.querySelector('.canvas-container').appendChild(canvas);
+                
+                canvas.onclick = () => openPdfViewer(pdfIndex, 1);
+                const viewport = page.getViewport({ scale: 1.0 });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                const context = canvas.getContext('2d');
+                await page.render({ canvasContext: context, viewport: viewport }).promise;
+                
+                if (spinnerContainer) spinnerContainer.remove();
+            } catch (error) {
+                console.error(`Error loading thumbnail for ${pdfInfo.name}:`, error);
+                if (spinnerContainer) {
+                   spinnerContainer.innerHTML = `<span class="text-red-600 font-semibold text-xs text-center p-2">Failed to load</span>`;
                 }
+            }
+        }
+        
+        // --- Improvement 1b: On-Demand Text Extraction ---
+        async function extractPdfText(pdfIndex) {
+            const pdfInfo = pdfData[pdfIndex];
+            if (pdfInfo.content !== null || pdfInfo.isExtracting) {
+                // Already loaded or in progress, do nothing.
+                return;
+            }
+
+            pdfInfo.isExtracting = true;
+            try {
+                const pdfDoc = await pdfjsLib.getDocument(pdfInfo.name).promise;
+                let extractedText = [];
+                for (let j = 1; j <= pdfDoc.numPages; j++) {
+                    const page = await pdfDoc.getPage(j);
+                    const textContent = await page.getTextContent();
+                    extractedText.push(textContent.items.map(item => item.str).join(' '));
+                }
+                pdfData[pdfIndex].content = extractedText;
+            } catch (error) {
+                console.error(`Failed to extract text from ${pdfInfo.name}:`, error);
+                pdfData[pdfIndex].content = ["Error: Could not load document content."]; // Mark as failed
+            } finally {
+                pdfData[pdfIndex].isExtracting = false;
             }
         }
 
@@ -288,46 +384,71 @@
         
         function updateThumbnailButtonState() {
             const isHidden = document.getElementById('document-selection').classList.contains('thumbnails-hidden');
-            if (isHidden) {
-                 toggleThumbnailsBtn.className = "text-sm font-semibold py-1 px-3 rounded-md hover:bg-opacity-90 transition-colors bg-[#F27E23] text-white";
-            } else {
-                 toggleThumbnailsBtn.className = "text-sm font-semibold py-1 px-3 rounded-md hover:bg-gray-300 transition-colors bg-gray-200 text-gray-700";
-            }
+            toggleThumbnailsBtn.className = `text-sm font-semibold py-1 px-3 rounded-md hover:bg-opacity-90 transition-colors ${isHidden ? 'bg-[#F27E23] text-white' : 'bg-gray-200 text-gray-700'}`;
         }
+        
+        function setupEventListeners() {
+            selectAllBtn.addEventListener('click', () => {
+                document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+                updateSelectionButtons();
+            });
 
-        // --- Event Listeners for Buttons ---
-        selectAllBtn.addEventListener('click', () => {
-            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
-            updateSelectionButtons();
-        });
+            deselectAllBtn.addEventListener('click', () => {
+                document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                updateSelectionButtons();
+            });
 
-        deselectAllBtn.addEventListener('click', () => {
-            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-            updateSelectionButtons();
-        });
+            toggleThumbnailsBtn.addEventListener('click', () => {
+                document.getElementById('document-selection').classList.toggle('thumbnails-hidden');
+                updateThumbnailButtonState();
+            });
 
-        toggleThumbnailsBtn.addEventListener('click', () => {
-            document.getElementById('document-selection').classList.toggle('thumbnails-hidden');
-            updateThumbnailButtonState();
-        });
+            searchInput.addEventListener('input', () => {
+                clearSearchBtn.classList.toggle('hidden', !searchInput.value);
+                if(!searchInput.value) mainSearchCount.textContent = '';
+            });
 
-        searchInput.addEventListener('input', () => {
-            clearSearchBtn.classList.toggle('hidden', !searchInput.value);
-            if(!searchInput.value) mainSearchCount.textContent = '';
-        });
+            clearSearchBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                resultsContainer.innerHTML = '<p>Search results will appear here.</p>';
+                mainSearchCount.textContent = '';
+                clearSearchBtn.classList.add('hidden');
+            });
 
-        clearSearchBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            resultsContainer.innerHTML = '<p>Search results will appear here.</p>';
-            mainSearchCount.textContent = '';
-            clearSearchBtn.classList.add('hidden');
-        });
+            searchBtn.addEventListener('click', performSearch);
+            searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); });
+            
+            closeModalBtn.addEventListener('click', closePdfViewer);
 
-        searchBtn.addEventListener('click', performSearch);
-        searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); });
+            // --- Improvement 3a: Event listener for Escape key ---
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closePdfViewer();
+                }
+            });
+
+            // --- Improvement 5a: Back to Top button logic ---
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 300) {
+                    backToTopBtn.classList.remove('hidden');
+                } else {
+                    backToTopBtn.classList.add('hidden');
+                }
+            });
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            // --- Improvement 6b: Event listeners for collapsible sections on mobile ---
+            document.querySelectorAll('.collapsible-section > button').forEach(button => {
+                button.addEventListener('click', () => {
+                    button.parentElement.classList.toggle('open');
+                });
+            });
+        }
         
         // --- Main Search Logic ---
-        function performSearch() {
+        async function performSearch() {
             currentSearchQuery = searchInput.value;
             const isCaseSensitive = caseSensitiveCheck.checked;
             const isWholeWord = wholeWordCheck.checked;
@@ -345,25 +466,45 @@
                 mainSearchCount.textContent = '';
                 return;
             }
+            
+            // --- Improvement 2a: Show searching indicator ---
+            resultsContainer.innerHTML = `
+                <div class="text-center p-8">
+                    <div id="loader" class="mx-auto h-10 w-10"></div>
+                    <p id="search-status" class="mt-2 text-gray-600">Searching...</p>
+                </div>`;
+            const searchStatus = document.getElementById('search-status');
 
-            resultsContainer.innerHTML = '';
             let foundResults = false;
             let totalMatches = 0;
-            
             const flags = isCaseSensitive ? 'g' : 'gi';
             const term = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
             const regex = new RegExp(isWholeWord ? `\\b${term}\\b` : term, flags);
             
-            selectedPdfIndexes.forEach(index => {
+            const tempResultsContainer = document.createDocumentFragment();
+
+            for (let i = 0; i < selectedPdfIndexes.length; i++) {
+                const index = selectedPdfIndexes[i];
                 const pdf = pdfData[index];
-                if (!pdf) return;
+                if (!pdf) continue;
+
+                // --- Improvement 1b: Extract text only if needed ---
+                if (pdf.content === null) {
+                    searchStatus.textContent = `Loading document ${i + 1} of ${selectedPdfIndexes.length}: ${pdf.displayName}`;
+                    await extractPdfText(index);
+                }
+
+                // Skip if content extraction failed
+                if (!pdf.content || pdf.content[0].startsWith("Error:")) continue;
+
+                searchStatus.textContent = `Searching in ${pdf.displayName}...`;
                 const fileResultContainer = document.createElement('div');
                 let foundInFile = false;
                 
                 pdf.content.forEach((pageText, pageIndex) => {
                     let match;
                     let pageSnippets = [];
-                    regex.lastIndex = 0;
+                    regex.lastIndex = 0; // Reset regex state
                     while ((match = regex.exec(pageText)) !== null) {
                         if (!foundInFile) foundInFile = true;
                         totalMatches++;
@@ -381,15 +522,12 @@
                         const pageNum = pageIndex + 1;
                         const pageResultDiv = document.createElement('div');
                         pageResultDiv.className = 'mt-3 pl-4 border-l-4 border-gray-200';
-                        const pageHeader = document.createElement('div');
-                        pageHeader.className = 'flex justify-between items-center';
-                        pageHeader.innerHTML = `<p>Found on page <span class="font-bold">${pageNum}</span>:</p>`;
+                        pageResultDiv.innerHTML = `<p>Found on page <span class="font-bold">${pageNum}</span>:</p>`;
                         const goToPageBtn = document.createElement('button');
                         goToPageBtn.textContent = 'View Page →';
-                        goToPageBtn.className = 'bg-[#F27E23] text-white font-bold py-1 px-3 rounded-md hover:bg-opacity-90 transition text-sm';
+                        goToPageBtn.className = 'bg-[#F27E23] text-white font-bold py-1 px-3 rounded-md hover:bg-opacity-90 transition text-sm float-right -mt-6';
                         goToPageBtn.onclick = () => openPdfViewer(index, pageNum);
-                        pageHeader.appendChild(goToPageBtn);
-                        pageResultDiv.appendChild(pageHeader);
+                        pageResultDiv.appendChild(goToPageBtn);
                         pageSnippets.forEach(snippetText => {
                             const snippetP = document.createElement('p');
                             snippetP.className = 'text-gray-600 italic mt-1 pl-2 text-sm';
@@ -404,71 +542,58 @@
                     foundResults = true;
                     const resultDiv = document.createElement('div');
                     resultDiv.className = 'mb-4 p-4 border border-gray-200 rounded-lg';
-                    const fileNameHeader = document.createElement('h3');
-                    fileNameHeader.className = 'text-xl font-semibold text-[#041E42] mb-2';
-                    fileNameHeader.textContent = pdf.displayName;
-                    resultDiv.appendChild(fileNameHeader);
+                    resultDiv.innerHTML = `<h3 class="text-xl font-semibold text-[#041E42] mb-2">${pdf.displayName}</h3>`;
                     resultDiv.appendChild(fileResultContainer);
-                    resultsContainer.appendChild(resultDiv);
+                    tempResultsContainer.appendChild(resultDiv);
                 }
-            });
-
+            }
+            
+            // --- Update DOM after all searching is done ---
+            resultsContainer.innerHTML = ''; // Clear the loader
             if (!foundResults) {
                 resultsContainer.innerHTML = '<p>No results found for your query in the selected documents.</p>';
                 mainSearchCount.textContent = '0 matches';
             } else {
-                 mainSearchCount.textContent = `${totalMatches} matches found`;
+                resultsContainer.appendChild(tempResultsContainer);
+                mainSearchCount.textContent = `${totalMatches} matches found`;
             }
         }
         
-        // --- NEW PDF Viewer Logic (Iframe) ---
+        // --- PDF Viewer Logic ---
         function openPdfViewer(pdfIndex, pageNumToShow) {
             const pdfItem = pdfData[pdfIndex];
             if (!pdfItem) return;
 
-            // Set the title in our custom header
             pdfViewerTitle.textContent = pdfItem.displayName;
-
-            // Construct the full, absolute URL to the PDF file
             const pdfUrl = new URL(pdfItem.name, window.location.href).href;
-
-            // Construct the URL for the viewer, passing the PDF file as a parameter
             let viewerUrl = `${PDF_VIEWER_URL}?file=${encodeURIComponent(pdfUrl)}`;
-
-            // Add URL hash parameters to control the viewer's state on load
             const hashParams = [];
-            if (pageNumToShow) {
-                hashParams.push(`page=${pageNumToShow}`);
-            }
+            if (pageNumToShow) hashParams.push(`page=${pageNumToShow}`);
             if (currentSearchQuery) {
-                // The default viewer uses 'search' and 'phrase' hash parameters
                 hashParams.push(`search=${encodeURIComponent(currentSearchQuery)}`);
                 hashParams.push(`phrase=${wholeWordCheck.checked}`);
             }
 
-            if (hashParams.length > 0) {
-                viewerUrl += `#${hashParams.join('&')}`;
-            }
+            if (hashParams.length > 0) viewerUrl += `#${hashParams.join('&')}`;
 
-            // Create and configure the iframe
-            iframeContainer.innerHTML = ''; // Clear previous iframe if any
+            iframeContainer.innerHTML = '';
             const iframe = document.createElement('iframe');
             iframe.src = viewerUrl;
             iframe.className = 'w-full h-full border-0';
             iframeContainer.appendChild(iframe);
             
-            // Show the modal
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden'); // Prevent background scroll
         }
 
-        // Add event listener for the modal's close button
-        closeModalBtn.addEventListener('click', () => {
+        function closePdfViewer() {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
-            // Important: Clear the iframe to stop the PDF from running in the background
             iframeContainer.innerHTML = '';
-        });
+            document.body.classList.remove('overflow-hidden');
+        }
+
     </script>
 </body>
 </html>
