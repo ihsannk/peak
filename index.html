@@ -168,26 +168,27 @@
         // --- CONFIGURATION ---
         const PDF_VIEWER_URL = 'https://mozilla.github.io/pdf.js/web/viewer.html';
         const PDF_CATEGORIES = [
-            // ... (Categories remain the same)
              {
                 category: "Acts",
                 files: [
+                    { filename: "Act-574-Penal-Code.pdf", displayName: "Penal Code" },
+                    { filename: "Act 593pdf.pdf", displayName: "Criminal Procedure Code" },
+                    { filename: "Act-56-Evidence-Act-2017.pdf", displayName: "Evidence Act 1950" },
+                    { filename: "Act 91.pdf", displayName: "Courts of Judicature Act 1964" },
+                    { filename: "Act 92.pdf", displayName: "Subordinate Courts Act 1948" },
                     { filename: "act-366_2023.pdf", displayName: "Poisons Act 1952" },
                     { filename: "sales-drug-act-1952-act-368.pdf", displayName: "Sale of Drugs Act 1952" },
                     { filename: "medicine-advertisement-sale-act-1956-act-290_2.pdf", displayName: "Medicines (Advertisement and Sale) Act 1956" },
                     { filename: "registration-pharmacists-act-1951-act-371_2.pdf", displayName: "Registration of Pharmacists Act 1951" },
                     { filename: "dangerous-drugs-act-1952-act-234_1.pdf", displayName: "Dangerous Drugs Act 1952" },
-                    { filename: "Act-593-CPC-17.5.2018.pdf", displayName: "Criminal Procedure Code" },
-                    { filename: "Act-56-Evidence-Act-2017.pdf", displayName: "Evidence Act 1950" },
-                    { filename: "Act-574-Penal-Code.pdf", displayName: "Penal Code" },
-                    { filename: "STA2010_2023.pdf", displayName: "Strategic Trade Act 2010"},
-                    { filename: "act723.pdf", displayName: "Price Control and Anti-Profiteering Act 2011"}
+                    { filename: "act723.pdf", displayName: "Price Control and Anti-Profiteering Act 2011"},
+                    { filename: "STA2010_2023.pdf", displayName: "Strategic Trade Act 2010"}
                 ]
             },
             {
                 category: "Regulations",
                 files: [
-                    { filename: "poison-regulations-1952_3.pdf", displayName: "Poisons Regulations 1952" },
+                    { filename: "poison-regulations-1952-2.pdf", displayName: "Poisons Regulations 1952" },
                     { filename: "poisons-psychotropic-substances-regulations-1989-2-0_0.pdf", displayName: "Poisons (Psychotropic Substances) Regulations 1989" },
                     { filename: "poisons-sodium-hydroxide-regulations-1962-0.pdf", displayName: "Poisons (Sodium Hydroxide) Regulations 1962" },
                     { filename: "peraturan-peraturan-racun-pengkompaunan-kesalahan-2023.pdf", displayName: "Peraturan-Peraturan Racun (Pengkompaunan Kesalahan) 2023" },
@@ -197,6 +198,13 @@
                     { filename: "dangerous-drugs-regulations-1952-clean.pdf", displayName: "Dangerous Drugs Regulations 1952" },
                     { filename: "price-control-compounding-offences-regulations-1994.pdf", displayName: "Price Control (Compounding of Offences) Regulations 1994" },
                     { filename: "price-control-compounding-offences-amendment-regulations-2000.pdf", displayName: "Price Control (Compounding of Offences) (Amendment) Regulations 2000" }
+                ]
+            },
+            {
+                category: "Orders",
+                files: [
+                    { filename: "PUA141.pdf", displayName: "Price Control and Anti-Profiteering (Price Marking for Drug) Order 2025" },
+                    { filename: "PUA314.pdf", displayName: "Price Control and Anti-Profiteering (Price Marking for Goods and Charges for Services) Order 2020" }
                 ]
             }
         ];
@@ -269,9 +277,9 @@
                                 <div class="h-6 w-6 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
                             </div>
                         </div>
-                        <div class="mt-2 text-center w-full">
-                            <label for="pdf-check-${currentIndex}" class="flex items-center justify-center cursor-pointer">
-                                <input type="checkbox" id="pdf-check-${currentIndex}" data-pdf-index="${currentIndex}" class="mr-2 h-4 w-4 accent-[#041E42]" onchange="updateSelectionButtons()">
+                        <div class="mt-2 text-center w-full h-16">
+                            <label for="pdf-check-${currentIndex}" class="flex items-start justify-center cursor-pointer">
+                                <input type="checkbox" id="pdf-check-${currentIndex}" data-pdf-index="${currentIndex}" class="mr-2 h-4 w-4 accent-[#041E42] flex-shrink-0 mt-0.5" onchange="updateSelectionButtons()">
                                 <span class="text-sm break-words">${pdfInfo.displayName}</span>
                             </label>
                         </div>
