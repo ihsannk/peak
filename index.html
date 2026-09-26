@@ -7,6 +7,15 @@
     <title>PEAK - Pharmacy Enforcement Archive of Knowledge</title>
     <link rel="icon" type="image/png" href="favicon.png">
 
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-K9QCF2V127"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-K9QCF2V127');
+    </script>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -523,6 +532,7 @@ function setupIntersectionObserver() {
 // DOCUMENT UI
 // ============================================================
 function switchTab(index) {
+    trackEvent('peak_category_view', { category: categories[index]?.name || String(index) });
     activeTabIndex = index;
     const tabs = tabsHeader.querySelectorAll('[role="tab"]');
     const panels = pdfListCategoriesContainer.querySelectorAll('.tab-panel');
@@ -566,7 +576,14 @@ function populatePdfList() {
             item.dataset.thumbnailLoaded = 'false';
             item.innerHTML = `<div class="canvas-container relative w-full" style="padding-top:141.42%;"><div class="spinner-container absolute inset-0 flex items-center justify-center bg-gray-50 rounded-md border border-gray-100"><div class="h-6 w-6 border-2 border-gray-300 border-t-orange-500 rounded-full animate-spin"></div></div></div><div class="mt-3 text-center w-full min-h-[5rem]"><label for="pdf-check-${index}" class="flex items-start justify-center cursor-pointer group"><input type="checkbox" id="pdf-check-${index}" data-pdf-index="${index}" class="document-checkbox mr-2 h-4 w-4 accent-[#041E42] flex-shrink-0 mt-0.5 cursor-pointer"><span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors break-words leading-snug">${escapeHtml(pdfInfo.displayName)}</span></label></div>`;
             const checkbox = item.querySelector('.document-checkbox');
-            checkbox.addEventListener('change', () => { saveSelection(); updateSelectionButtons(); });
+            checkbox.addEventListener('change', () => {
+                saveSelection();
+                updateSelectionButtons();
+                trackEvent('peak_document_selection', {
+                    document_name: getAnalyticsDocumentName(Number(checkbox.dataset.pdfIndex)),
+                    selected: checkbox.checked
+                });
+            });
             grid.appendChild(item);
         });
     });
@@ -607,6 +624,25 @@ function updateProgress(status, percentage) {
     if (text) text.textContent = `${percentage}%`;
 }
 
+// ============================================================
+// GOOGLE ANALYTICS / PEAK USAGE TRACKING
+// ============================================================
+function trackEvent(eventName, parameters = {}) {
+    if (typeof window.gtag !== 'function') return;
+    try {
+        window.gtag('event', eventName, parameters);
+    } catch (_) {}
+}
+
+function cleanSearchTerm(term) {
+    // Keep analytics useful while avoiding accidental long/personal strings.
+    return String(term || '').trim().replace(/\s+/g, ' ').slice(0, 100);
+}
+
+function getAnalyticsDocumentName(pdfIndex) {
+    return pdfData[pdfIndex]?.displayName || `Document ${pdfIndex + 1}`;
+}
+
 async function performSearch() {
     const token = ++currentSearchToken;
     const query = searchInput.value.trim();
@@ -621,6 +657,12 @@ async function performSearch() {
 
     addSearchHistory(query);
     updateUrlState(query);
+    trackEvent('peak_search', {
+        search_term: cleanSearchTerm(query),
+        documents_selected: selected.length,
+        case_sensitive: caseSensitive,
+        whole_word: wholeWord
+    });
     resultsSectionContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     renderSearchProgress('Preparing search', `0 of ${selected.length} documents`, 0);
 
@@ -694,7 +736,14 @@ function renderResults(resultGroups, totalMatches, query) {
             button.type = 'button';
             button.className = 'float-right ml-3 mb-2 bg-white border border-gray-200 text-[#041E42] font-bold py-1.5 px-3 rounded-md hover:bg-[#041E42] hover:text-white transition-all text-sm shadow-sm';
             button.textContent = 'View Match →';
-            button.addEventListener('click', () => openPdfViewer(group.pdfIndex, page.pageNum));
+            button.addEventListener('click', () => {
+                trackEvent('peak_search_result_open', {
+                    document_name: getAnalyticsDocumentName(group.pdfIndex),
+                    page_number: page.pageNum,
+                    search_term: cleanSearchTerm(query)
+                });
+                openPdfViewer(group.pdfIndex, page.pageNum);
+            });
             pageDiv.innerHTML = `<p class="font-bold text-gray-800 mb-3 text-base">📄 ${escapeHtml(title)}</p>`;
             pageDiv.appendChild(button);
 
@@ -747,6 +796,13 @@ function initializeViewer() {
 function executeViewerSearch(findAgain = false, findPrevious = false) {
     if (!peakPdfFindController) return;
     const query = viewerSearchInput.value.trim();
+    if (query) {
+        trackEvent('peak_pdf_search', {
+            search_term: cleanSearchTerm(query),
+            document_name: pdfViewerTitle.textContent || 'Unknown document',
+            find_previous: findPrevious
+        });
+    }
     if (!query) {
         peakPdfFindController.executeCommand('find', { query: '' });
         return;
@@ -763,6 +819,11 @@ function executeViewerSearch(findAgain = false, findPrevious = false) {
 function openPdfViewer(pdfIndex, pageNumToShow = 1) {
     const pdfItem = pdfData[pdfIndex];
     if (!pdfItem) return;
+    trackEvent('peak_pdf_open', {
+        document_name: pdfItem.displayName,
+        document_category: pdfItem.category || 'Unknown',
+        page_number: pageNumToShow
+    });
     previousFocusedElement = document.activeElement;
     pdfViewerTitle.textContent = pdfItem.displayName;
     viewerSearchInput.value = currentSearchQuery;
@@ -832,14 +893,17 @@ function setupEventListeners() {
     selectAllBtn.addEventListener('click', () => {
         document.querySelectorAll('.document-checkbox').forEach(cb => cb.checked = true);
         saveSelection(); updateSelectionButtons();
+        trackEvent('peak_document_selection_bulk', { action: 'select_all' });
     });
     deselectAllBtn.addEventListener('click', () => {
         document.querySelectorAll('.document-checkbox').forEach(cb => cb.checked = false);
         saveSelection(); updateSelectionButtons();
+        trackEvent('peak_document_selection_bulk', { action: 'deselect_all' });
     });
     toggleThumbnailsBtn.addEventListener('click', () => {
         $('document-selection').classList.toggle('thumbnails-hidden');
         updateThumbnailButtonState();
+        trackEvent('peak_thumbnails_toggle', { hidden: $('document-selection').classList.contains('thumbnails-hidden') });
     });
     searchInput.addEventListener('input', updateSearchControls);
     searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') performSearch(); });
@@ -871,6 +935,11 @@ function setupEventListeners() {
 }
 
 function initializeApp() {
+    trackEvent('peak_app_open', {
+        page_title: document.title,
+        screen_width: window.innerWidth,
+        screen_height: window.innerHeight
+    });
     populatePdfList();
     setupEventListeners();
     loadSettings();
