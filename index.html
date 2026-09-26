@@ -3,840 +3,885 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PEAK - Pharmacy Enforcement Archive of Knowledge">
     <title>PEAK - Pharmacy Enforcement Archive of Knowledge</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- PDF.js Core & Viewer Libraries -->
+
+    <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf_viewer.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf_viewer.min.css" />
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf_viewer.min.css">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         html { scroll-behavior: smooth; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
-        }
-        
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; }
+        body.modal-open { overflow: hidden; }
         .pdf-list-item canvas {
             border: 1px solid #e2e8f0;
-            border-radius: 0.375rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s, opacity 0.3s;
-            background-color: #ffffff;
+            border-radius: .375rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
+            transition: transform .2s, opacity .3s;
+            background: #fff;
             width: 100%;
             height: auto;
         }
-        .pdf-list-item:hover canvas {
-            transform: translateY(-5px);
-        }
-        .thumbnails-hidden .pdf-list-item .canvas-container {
-            display: none;
-        }
-        
-        .textLayer .highlight {
-            background-color: rgba(242, 126, 35, 0.5) !important;
-            border-radius: 2px;
-        }
-        .textLayer .highlight.selected {
-            background-color: rgba(67, 185, 255, 0.8) !important;
-        }
-
+        .pdf-list-item:hover canvas { transform: translateY(-5px); }
+        .thumbnails-hidden .pdf-list-item .canvas-container { display: none; }
+        .textLayer .highlight { background-color: rgba(242,126,35,.5) !important; border-radius: 2px; }
+        .textLayer .highlight.selected { background-color: rgba(67,185,255,.8) !important; }
+        .search-match { background: rgba(242,126,35,.24); color: #c55f00; font-weight: 700; padding: 0 2px; border-radius: 2px; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .tab-panel.hidden { display: none; }
+        .search-loading .progress-bar { transition: width .2s ease; }
         @media (max-width: 767px) {
             .collapsible-content { display: none; }
             .collapsible-section.open .collapsible-content { display: block; }
             .collapsible-section.open .chevron-down { display: none; }
             .collapsible-section:not(.open) .chevron-up { display: none; }
         }
-        
-        /* Hide scrollbar for Tab Navigation */
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+        }
     </style>
 </head>
 <body class="text-gray-800 relative">
+<div class="container mx-auto p-4 md:p-8 max-w-6xl">
+    <header class="mb-8 flex justify-center">
+        <img src="peak.png" alt="PEAK Logo" class="h-20 w-4/5 sm:w-auto" title="PEAK | Pharmacy Enforcement Archive of Knowledge"
+             onerror="this.onerror=null;this.src='https://placehold.co/400x100/041E42/FFFFFF?text=PEAK+Archive'">
+    </header>
 
-    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
-        <header class="mb-8 flex justify-center">
-             <img src="peak.png" alt="PEAK Logo" class="h-20 w-4/5 sm:w-auto" title="PEAK | Pharmacy Enforcement Archive of Knowledge" onerror="this.src='https://placehold.co/400x100/041E42/FFFFFF?text=PEAK+Archive'">
-        </header>
+    <main>
+        <!-- SEARCH -->
+        <section class="bg-white p-6 rounded-lg shadow-lg mb-8 collapsible-section open" aria-labelledby="search-heading">
+            <button class="w-full flex justify-between items-center text-left md:hidden mb-4" type="button" aria-expanded="true">
+                <h2 id="search-heading-mobile" class="text-2xl font-semibold text-[#041E42]">Search Archive</h2>
+                <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5-7.5"/></svg>
+            </button>
+            <div class="collapsible-content">
+                <h2 id="search-heading" class="text-2xl font-semibold mb-4 text-[#041E42] hidden md:block">Search Archive</h2>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/></svg>
+                    </div>
+                    <input type="text" id="search-input" autocomplete="off" placeholder="Enter search term to scan archives..." aria-label="Search PEAK archives" class="w-full pl-11 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#041E42] text-lg">
+                    <button id="clear-search-btn" type="button" aria-label="Clear search" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden text-2xl font-bold">&times;</button>
+                </div>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mt-4 gap-4">
+                    <div class="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                        <label class="flex items-center cursor-pointer group"><input type="checkbox" id="case-sensitive-check" class="h-5 w-5 accent-[#041E42] cursor-pointer"><span class="ml-2 text-gray-700 group-hover:text-gray-900">Case-sensitive</span></label>
+                        <label class="flex items-center cursor-pointer group"><input type="checkbox" id="whole-word-check" class="h-5 w-5 accent-[#041E42] cursor-pointer"><span class="ml-2 text-gray-700 group-hover:text-gray-900">Match whole word</span></label>
+                    </div>
+                    <div class="flex items-center gap-4 w-full md:w-auto justify-end">
+                        <span id="main-search-count" class="text-[#F27E23] text-sm font-bold bg-orange-50 px-3 py-1 rounded-md hidden" aria-live="polite"></span>
+                        <button id="search-btn" type="button" class="bg-[#041E42] text-white font-bold py-3 px-8 rounded-lg hover:bg-opacity-90 transition disabled:bg-gray-400 w-full md:w-auto shadow-md">Search</button>
+                    </div>
+                </div>
+                <div id="search-history" class="hidden mt-4"></div>
+            </div>
+        </section>
 
-        <main>
-            <div class="bg-white p-6 rounded-lg shadow-lg mb-8 collapsible-section open">
-                 <button class="w-full flex justify-between items-center text-left md:hidden mb-4">
-                    <h2 class="text-2xl font-semibold text-[#041E42]">Search Archive</h2>
-                    <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
-                    <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
-                </button>
-                <div class="collapsible-content">
-                    <h2 class="text-2xl font-semibold mb-4 text-[#041E42] hidden md:block">Search Archive</h2>
-                    <div class="relative">
-                        <!-- Magnifying glass icon inside the search bar -->
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <input type="text" id="search-input" placeholder="Enter search term to scan archives..." class="w-full pl-11 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#041E42] text-lg">
-                        <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden text-2xl font-bold">&times;</button>
+        <!-- DOCUMENT SELECTION -->
+        <section id="document-selection" class="bg-white p-6 rounded-lg shadow-lg mb-8 collapsible-section open" aria-labelledby="filter-heading">
+            <button class="w-full flex justify-between items-center text-left md:hidden mb-4" type="button" aria-expanded="true">
+                <h2 class="text-2xl font-semibold text-[#041E42]">Filter Documents</h2>
+                <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5-7.5"/></svg>
+            </button>
+            <div class="collapsible-content">
+                <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+                    <h2 id="filter-heading" class="text-2xl font-semibold text-[#041E42] hidden md:block">Filter Documents</h2>
+                    <div class="flex gap-2 flex-wrap">
+                        <button id="toggle-thumbnails-btn" type="button" class="text-sm font-semibold py-1.5 px-3 rounded-md transition-colors">Toggle Thumbnails</button>
+                        <button id="select-all-btn" type="button" class="text-sm font-semibold py-1.5 px-3 rounded-md transition-colors">Select All</button>
+                        <button id="deselect-all-btn" type="button" class="text-sm font-semibold py-1.5 px-3 rounded-md transition-colors">Deselect All</button>
                     </div>
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mt-4 gap-4">
-                        <div class="flex flex-col sm:flex-row gap-4 sm:gap-6">
-                            <label class="flex items-center cursor-pointer group">
-                                <input type="checkbox" id="case-sensitive-check" class="h-5 w-5 accent-[#041E42] cursor-pointer">
-                                <span class="ml-2 text-gray-700 group-hover:text-gray-900">Case-sensitive</span>
-                            </label>
-                            <label class="flex items-center cursor-pointer group">
-                                <input type="checkbox" id="whole-word-check" class="h-5 w-5 accent-[#041E42] cursor-pointer">
-                                <span class="ml-2 text-gray-700 group-hover:text-gray-900">Match whole word</span>
-                            </label>
-                        </div>
-                        <div class="flex items-center gap-4 w-full md:w-auto justify-end">
-                            <span id="main-search-count" class="text-[#F27E23] text-sm font-bold bg-orange-50 px-3 py-1 rounded-md hidden"></span>
-                            <button id="search-btn" class="bg-[#041E42] text-white font-bold py-3 px-8 rounded-lg hover:bg-opacity-90 transition disabled:bg-gray-400 w-full md:w-auto shadow-md">Search</button>
-                        </div>
-                    </div>
+                </div>
+                <div id="pdf-tabs-header" class="flex border-b border-gray-200 mb-6 overflow-x-auto hide-scrollbar gap-2" role="tablist" aria-label="Document categories"></div>
+                <div id="initial-loader-container" class="text-center my-4"><p class="mt-2 text-gray-600 font-medium animate-pulse">Loading document architecture...</p></div>
+                <div id="pdf-list-categories"></div>
+            </div>
+        </section>
+
+        <!-- RESULTS -->
+        <section id="results-container" class="bg-white p-6 rounded-lg shadow-lg collapsible-section open" aria-labelledby="results-heading">
+            <button class="w-full flex justify-between items-center text-left md:hidden mb-4" type="button" aria-expanded="true">
+                <h2 class="text-2xl font-semibold text-[#041E42]">Search Results</h2>
+                <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5-7.5"/></svg>
+            </button>
+            <div id="results" class="collapsible-content text-gray-700">
+                <h2 id="results-heading" class="text-2xl font-semibold mb-4 text-[#041E42] hidden md:block">Search Results</h2>
+                <div id="empty-state" class="flex flex-col items-center justify-center py-16 text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                    <svg class="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                    <p class="text-xl font-semibold text-gray-500 mb-1">Your search results will appear here</p>
+                    <p class="text-sm">Enter a keyword above to scan the PEAK archives.</p>
                 </div>
             </div>
+        </section>
+    </main>
+</div>
 
-            <div id="document-selection" class="bg-white p-6 rounded-lg shadow-lg mb-8 collapsible-section open">
-                <button class="w-full flex justify-between items-center text-left md:hidden mb-4">
-                    <h2 class="text-2xl font-semibold text-[#041E42]">Filter Documents</h2>
-                    <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
-                    <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
-                </button>
-
-                <div class="collapsible-content">
-                    <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
-                        <h2 class="text-2xl font-semibold text-[#041E42] hidden md:block">Filter Documents</h2>
-                        <div class="flex gap-2 flex-wrap">
-                            <button id="toggle-thumbnails-btn" class="text-sm font-semibold py-1.5 px-3 rounded-md transition-colors">Toggle Thumbnails</button>
-                            <button id="select-all-btn" class="text-sm font-semibold py-1.5 px-3 rounded-md transition-colors">Select All</button>
-                            <button id="deselect-all-btn" class="text-sm font-semibold py-1.5 px-3 rounded-md transition-colors">Deselect All</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Tab Navigation Header -->
-                    <div id="pdf-tabs-header" class="flex border-b border-gray-200 mb-6 overflow-x-auto hide-scrollbar gap-2"></div>
-                    
-                    <div id="initial-loader-container" class="text-center my-4">
-                        <p class="mt-2 text-gray-600 font-medium animate-pulse">Loading document architecture...</p>
-                    </div>
-                    <div id="pdf-list-categories"></div>
+<!-- PDF VIEWER -->
+<div id="pdf-viewer-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-2 md:p-6 z-50" role="dialog" aria-modal="true" aria-labelledby="pdf-viewer-title">
+    <div class="bg-white rounded-lg shadow-2xl w-full h-full flex flex-col relative overflow-hidden">
+        <div class="flex flex-col sm:flex-row justify-between items-center px-4 py-2 border-b bg-[#f0f4f8] flex-shrink-0 z-10 min-h-[56px] shadow-sm gap-2">
+            <div class="flex items-center gap-3 overflow-hidden w-full sm:w-1/3">
+                <div class="bg-[#041E42] text-white p-1.5 rounded flex-shrink-0"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+                <h3 id="pdf-viewer-title" class="text-lg font-bold truncate text-[#041E42]">PDF Viewer</h3>
+            </div>
+            <div class="flex items-center justify-center w-full sm:w-1/3">
+                <div class="relative w-full max-w-sm flex items-center bg-white border border-gray-300 rounded-md overflow-hidden shadow-sm">
+                    <input type="text" id="viewer-search-input" placeholder="Find in document..." aria-label="Find in document" class="w-full px-3 py-1.5 focus:outline-none text-sm">
+                    <button id="viewer-search-prev" type="button" class="px-2 py-1.5 text-gray-500 hover:text-[#041E42] hover:bg-gray-100 border-l border-gray-200" title="Previous match" aria-label="Previous match"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></button>
+                    <button id="viewer-search-next" type="button" class="px-2 py-1.5 text-gray-500 hover:text-[#041E42] hover:bg-gray-100 border-l border-gray-200" title="Next match" aria-label="Next match"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
                 </div>
             </div>
-
-            <div id="results-container" class="bg-white p-6 rounded-lg shadow-lg collapsible-section open">
-                 <button class="w-full flex justify-between items-center text-left md:hidden mb-4">
-                    <h2 class="text-2xl font-semibold text-[#041E42]">Search Results</h2>
-                    <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
-                    <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
-                </button>
-                <div id="results" class="collapsible-content text-gray-700">
-                     <h2 class="text-2xl font-semibold mb-4 text-[#041E42] hidden md:block">Search Results</h2>
-                     
-                     <!-- Premium Empty State -->
-                     <div class="flex flex-col items-center justify-center py-16 text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                        <svg class="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg>
-                        <p class="text-xl font-semibold text-gray-500 mb-1">Your search results will appear here</p>
-                        <p class="text-sm">Enter a keyword above to scan the PEAK archives.</p>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <div id="pdf-viewer-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-2 md:p-6 z-50">
-        <div class="bg-white rounded-lg shadow-2xl w-full h-full flex flex-col relative overflow-hidden">
-            <div class="flex flex-col sm:flex-row justify-between items-center px-4 py-2 border-b bg-[#f0f4f8] flex-shrink-0 z-10 min-h-[56px] shadow-sm gap-2">
-                <div class="flex items-center gap-3 overflow-hidden w-full sm:w-1/3">
-                    <div class="bg-[#041E42] text-white p-1.5 rounded flex-shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    </div>
-                    <h3 id="pdf-viewer-title" class="text-lg font-bold truncate text-[#041E42]">PDF Viewer</h3>
-                </div>
-                
-                <div class="flex items-center justify-center w-full sm:w-1/3">
-                    <div class="relative w-full max-w-sm flex items-center bg-white border border-gray-300 rounded-md overflow-hidden shadow-sm">
-                        <input type="text" id="viewer-search-input" placeholder="Find in document..." class="w-full px-3 py-1.5 focus:outline-none text-sm">
-                        <button id="viewer-search-prev" class="px-2 py-1.5 text-gray-500 hover:text-[#041E42] hover:bg-gray-100 border-l border-gray-200 transition-colors" title="Previous match">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                        </button>
-                        <button id="viewer-search-next" class="px-2 py-1.5 text-gray-500 hover:text-[#041E42] hover:bg-gray-100 border-l border-gray-200 transition-colors" title="Next match">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="flex justify-end w-full sm:w-1/3">
-                    <button id="close-modal-btn" class="text-gray-400 hover:text-red-600 transition-colors text-3xl font-bold leading-none">&times;</button>
-                </div>
-            </div>
-            
-            <!-- Custom Viewer Container -->
-            <div id="viewerContainer" class="absolute left-0 right-0 bottom-0 top-[96px] sm:top-[56px] overflow-auto bg-gray-200">
-                <div id="viewer" class="pdfViewer"></div>
-            </div>
+            <div class="flex justify-end w-full sm:w-1/3"><button id="close-modal-btn" type="button" aria-label="Close PDF viewer" class="text-gray-400 hover:text-red-600 transition-colors text-3xl font-bold leading-none">&times;</button></div>
+        </div>
+        <div id="viewerContainer" class="absolute left-0 right-0 bottom-0 top-[96px] sm:top-[56px] overflow-auto bg-gray-200">
+            <div id="viewer" class="pdfViewer"></div>
         </div>
     </div>
-    
-    <footer class="text-center py-6 mt-8">
-        <p class="text-gray-500 font-medium">Pharmacy Enforcement Archive of Knowledge</p>
-        <p class="text-sm text-gray-400">&copy; 2026 PEAK Database</p>
-    </footer>
+</div>
 
-    <button id="back-to-top-btn" title="Back to Top" class="hidden fixed bottom-5 right-5 bg-[#041E42] text-white rounded-full p-3 shadow-2xl hover:bg-opacity-90 hover:-translate-y-1 transition-all z-40">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
-        </svg>
-    </button>
+<footer class="text-center py-6 mt-8">
+    <p class="text-gray-500 font-medium">Pharmacy Enforcement Archive of Knowledge</p>
+    <p class="text-sm text-gray-400">&copy; 2026 PEAK Database</p>
+</footer>
 
-    <script>
-        // Setup PDF.js web worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
+<button id="back-to-top-btn" type="button" title="Back to Top" aria-label="Back to Top" class="hidden fixed bottom-5 right-5 bg-[#041E42] text-white rounded-full p-3 shadow-2xl hover:bg-opacity-90 hover:-translate-y-1 transition-all z-40">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5"/></svg>
+</button>
 
-        // --- CONFIGURATION ---
-        const PDF_CATEGORIES = [
-             {
-                category: "Acts",
-                files: [
-                    { filename: "Act-574-Penal-Code.pdf", displayName: "Penal Code" },
-                    { filename: "Act 593pdf.pdf", displayName: "Criminal Procedure Code" },
-                    { filename: "Act-56-Evidence-Act-2017.pdf", displayName: "Evidence Act 1950" },
-                    { filename: "Act 91.pdf", displayName: "Courts of Judicature Act 1964" },
-                    { filename: "Act 92.pdf", displayName: "Subordinate Courts Act 1948" },
-                    { filename: "act-366_2023.pdf", displayName: "Poisons Act 1952" },
-                    { filename: "sales-drug-act-1952-act-368.pdf", displayName: "Sale of Drugs Act 1952" },
-                    { filename: "medicine-advertisement-sale-act-1956-act-290_2.pdf", displayName: "Medicines (Advertisement and Sale) Act 1956" },
-                    { filename: "registration-pharmacists-act-1951-act-371_2.pdf", displayName: "Registration of Pharmacists Act 1951" },
-                    { filename: "dangerous-drugs-act-1952-act-234_1.pdf", displayName: "Dangerous Drugs Act 1952" },
-                    { filename: "act723.pdf", displayName: "Price Control and Anti-Profiteering Act 2011"},
-                    { filename: "STA2010_2023.pdf", displayName: "Strategic Trade Act 2010"},
-                    { filename: "Act 613_2022.pdf", displayName: "Anti-Money Laundering, Anti-Terrorism Financing and Proceeds of Unlawful Activities Act 2001 (Act 613)"} // NEW AKTA
-                ]
-            },
-            {
-                category: "Regulations",
-                files: [
-                    { filename: "poison-regulations-1952-2.pdf", displayName: "Poisons Regulations 1952" },
-                    { filename: "poisons-psychotropic-substances-regulations-1989-2-0_0.pdf", displayName: "Poisons (Psychotropic Substances) Regulations 1989" },
-                    { filename: "poisons-sodium-hydroxide-regulations-1962-0.pdf", displayName: "Poisons (Sodium Hydroxide) Regulations 1962" },
-                    { filename: "peraturan-peraturan-racun-pengkompaunan-kesalahan-2023.pdf", displayName: "Peraturan-Peraturan Racun (Pengkompaunan Kesalahan) 2023" },
-                    { filename: "control-drugs-and-cosmetics-regulations-1984.pdf", displayName: "Control of Drugs and Cosmetics Regulations 1984" },
-                    { filename: "medicine-advertisements-board-regulations-1976-19092024_0.pdf", displayName: "Medicines (Advertisement Board) Regulations 1976" },
-                    { filename: "registration-pharmacists-regulations-2004_0.pdf", displayName: "Registration of Pharmacists Regulations 2004" },
-                    { filename: "dangerous-drugs-regulations-1952-clean.pdf", displayName: "Dangerous Drugs Regulations 1952" },
-                    { filename: "price-control-compounding-offences-regulations-1994.pdf", displayName: "Price Control (Compounding of Offences) Regulations 1994" },
-                    { filename: "price-control-compounding-offences-amendment-regulations-2000.pdf", displayName: "Price Control (Compounding of Offences) (Amendment) Regulations 2000" }
-                ]
-            },
-            {
-                category: "Orders",
-                files: [
-                    { filename: "PUA141.pdf", displayName: "Price Control and Anti-Profiteering (Price Marking for Drug) Order 2025" },
-                    { filename: "PUA314.pdf", displayName: "Price Control and Anti-Profiteering (Price Marking for Goods and Charges for Services) Order 2020" }
-                ]
+<script>
+'use strict';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
+
+// ============================================================
+// CONFIGURATION - ADD/REMOVE PDFs HERE
+// ============================================================
+const PDF_CATEGORIES = [
+    { category: 'Acts', files: [
+        { filename: 'Act-574-Penal-Code.pdf', displayName: 'Penal Code' },
+        { filename: 'Act 593pdf.pdf', displayName: 'Criminal Procedure Code' },
+        { filename: 'Act-56-Evidence-Act-2017.pdf', displayName: 'Evidence Act 1950' },
+        { filename: 'Act 91.pdf', displayName: 'Courts of Judicature Act 1964' },
+        { filename: 'Act 92.pdf', displayName: 'Subordinate Courts Act 1948' },
+        { filename: 'act-366_2023.pdf', displayName: 'Poisons Act 1952' },
+        { filename: 'sales-drug-act-1952-act-368.pdf', displayName: 'Sale of Drugs Act 1952' },
+        { filename: 'medicine-advertisement-sale-act-1956-act-290_2.pdf', displayName: 'Medicines (Advertisement and Sale) Act 1956' },
+        { filename: 'registration-pharmacists-act-1951-act-371_2.pdf', displayName: 'Registration of Pharmacists Act 1951' },
+        { filename: 'dangerous-drugs-act-1952-act-234_1.pdf', displayName: 'Dangerous Drugs Act 1952' },
+        { filename: 'act723.pdf', displayName: 'Price Control and Anti-Profiteering Act 2011' },
+        { filename: 'STA2010_2023.pdf', displayName: 'Strategic Trade Act 2010' },
+        { filename: 'Act 613_2022.pdf', displayName: 'Anti-Money Laundering, Anti-Terrorism Financing and Proceeds of Unlawful Activities Act 2001 (Act 613)' }
+    ]},
+    { category: 'Regulations', files: [
+        { filename: 'poison-regulations-1952-2.pdf', displayName: 'Poisons Regulations 1952' },
+        { filename: 'poisons-psychotropic-substances-regulations-1989-2-0_0.pdf', displayName: 'Poisons (Psychotropic Substances) Regulations 1989' },
+        { filename: 'poisons-sodium-hydroxide-regulations-1962-0.pdf', displayName: 'Poisons (Sodium Hydroxide) Regulations 1962' },
+        { filename: 'peraturan-peraturan-racun-pengkompaunan-kesalahan-2023.pdf', displayName: 'Peraturan-Peraturan Racun (Pengkompaunan Kesalahan) 2023' },
+        { filename: 'control-drugs-and-cosmetics-regulations-1984.pdf', displayName: 'Control of Drugs and Cosmetics Regulations 1984' },
+        { filename: 'medicine-advertisements-board-regulations-1976-19092024_0.pdf', displayName: 'Medicines (Advertisement Board) Regulations 1976' },
+        { filename: 'registration-pharmacists-regulations-2004_0.pdf', displayName: 'Registration of Pharmacists Regulations 2004' },
+        { filename: 'dangerous-drugs-regulations-1952-clean.pdf', displayName: 'Dangerous Drugs Regulations 1952' },
+        { filename: 'price-control-compounding-offences-regulations-1994.pdf', displayName: 'Price Control (Compounding of Offences) Regulations 1994' },
+        { filename: 'price-control-compounding-offences-amendment-regulations-2000.pdf', displayName: 'Price Control (Compounding of Offences) (Amendment) Regulations 2000' }
+    ]},
+    { category: 'Orders', files: [
+        { filename: 'PUA141.pdf', displayName: 'Price Control and Anti-Profiteering (Price Marking for Drug) Order 2025' },
+        { filename: 'PUA314.pdf', displayName: 'Price Control and Anti-Profiteering (Price Marking for Goods and Charges for Services) Order 2020' }
+    ]}
+];
+
+const APP_VERSION = '2026.09.26.2';
+const DB_NAME = 'PEAK_Search_Cache';
+const DB_VERSION = 1;
+const SEARCH_HISTORY_KEY = 'peak_search_history_v1';
+const SELECTION_KEY = 'peak_document_selection_v1';
+const SETTINGS_KEY = 'peak_settings_v1';
+const MAX_VISIBLE_SNIPPETS_PER_PAGE = 3;
+const SNIPPET_RADIUS = 90;
+
+const $ = id => document.getElementById(id);
+const pdfListCategoriesContainer = $('pdf-list-categories');
+const tabsHeader = $('pdf-tabs-header');
+const searchInput = $('search-input');
+const searchBtn = $('search-btn');
+const mainSearchCount = $('main-search-count');
+const clearSearchBtn = $('clear-search-btn');
+const selectAllBtn = $('select-all-btn');
+const deselectAllBtn = $('deselect-all-btn');
+const toggleThumbnailsBtn = $('toggle-thumbnails-btn');
+const caseSensitiveCheck = $('case-sensitive-check');
+const wholeWordCheck = $('whole-word-check');
+const resultsContainer = $('results');
+const emptyState = $('empty-state');
+const resultsSectionContainer = $('results-container');
+const initialLoader = $('initial-loader-container');
+const modal = $('pdf-viewer-modal');
+const closeModalBtn = $('close-modal-btn');
+const pdfViewerTitle = $('pdf-viewer-title');
+const viewerSearchInput = $('viewer-search-input');
+const viewerSearchNext = $('viewer-search-next');
+const viewerSearchPrev = $('viewer-search-prev');
+const backToTopBtn = $('back-to-top-btn');
+
+let pdfData = [];
+let pdfCache = new Map();
+let thumbnailCache = new Map();
+let currentSearchQuery = '';
+let currentSearchToken = 0;
+let activeTabIndex = 0;
+let currentViewerPdfUrl = '';
+let peakPdfViewer = null;
+let peakPdfFindController = null;
+let peakEventBus = null;
+let peakLinkService = null;
+let previousFocusedElement = null;
+let pendingPageNum = 1;
+let dbPromise = null;
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[char]);
+}
+
+function normalizeText(value) {
+    return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function yieldToBrowser() {
+    return new Promise(resolve => setTimeout(resolve, 0));
+}
+
+function isWordChar(char) {
+    return !!char && /[\p{L}\p{N}_]/u.test(char);
+}
+
+function isWholeWordAt(text, index, length) {
+    return !isWordChar(text[index - 1]) && !isWordChar(text[index + length]);
+}
+
+function findMatches(text, query, caseSensitive, wholeWord) {
+    const source = caseSensitive ? text : text.toLocaleLowerCase();
+    const needle = caseSensitive ? query : query.toLocaleLowerCase();
+    if (!needle) return [];
+    const matches = [];
+    let from = 0;
+    while (from <= source.length - needle.length) {
+        const index = source.indexOf(needle, from);
+        if (index === -1) break;
+        if (!wholeWord || isWholeWordAt(text, index, needle.length)) matches.push({ index, length: needle.length });
+        from = index + Math.max(needle.length, 1);
+    }
+    return matches;
+}
+
+function createHighlightedSnippet(text, matchIndex, matchLength) {
+    const start = Math.max(0, matchIndex - SNIPPET_RADIUS);
+    const end = Math.min(text.length, matchIndex + matchLength + SNIPPET_RADIUS);
+    const before = escapeHtml(text.slice(start, matchIndex));
+    const match = escapeHtml(text.slice(matchIndex, matchIndex + matchLength));
+    const after = escapeHtml(text.slice(matchIndex + matchLength, end));
+    return `${start > 0 ? '... ' : ''}${before}<mark class="search-match">${match}</mark>${after}${end < text.length ? ' ...' : ''}`;
+}
+
+function getPdfUrl(pdfInfo) {
+    return new URL(pdfInfo.name, window.location.href).href;
+}
+
+function getSelectedIndexes() {
+    return Array.from(document.querySelectorAll('.document-checkbox:checked')).map(cb => Number(cb.dataset.pdfIndex));
+}
+
+function saveSelection() {
+    try { localStorage.setItem(SELECTION_KEY, JSON.stringify(getSelectedIndexes())); } catch (_) {}
+}
+
+function loadSavedSelection() {
+    try {
+        const raw = localStorage.getItem(SELECTION_KEY);
+        if (raw === null) {
+            document.querySelectorAll('.document-checkbox').forEach(cb => cb.checked = true);
+            return;
+        }
+        const saved = JSON.parse(raw);
+        if (!Array.isArray(saved)) return;
+        document.querySelectorAll('.document-checkbox').forEach(cb => cb.checked = saved.includes(Number(cb.dataset.pdfIndex)));
+    } catch (_) {
+        document.querySelectorAll('.document-checkbox').forEach(cb => cb.checked = true);
+    }
+}
+
+function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ caseSensitive: caseSensitiveCheck.checked, wholeWord: wholeWordCheck.checked })); } catch (_) {}
+}
+
+function loadSettings() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+        if (saved) {
+            caseSensitiveCheck.checked = !!saved.caseSensitive;
+            wholeWordCheck.checked = !!saved.wholeWord;
+        }
+    } catch (_) {}
+}
+
+function addSearchHistory(query) {
+    try {
+        const history = JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || '[]');
+        const updated = [query, ...history.filter(item => item !== query)].slice(0, 5);
+        localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updated));
+    } catch (_) {}
+    renderSearchHistory();
+}
+
+function renderSearchHistory() {
+    const container = $('search-history');
+    if (!container) return;
+    let history = [];
+    try { history = JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY) || '[]'); } catch (_) {}
+    if (!history.length) { container.classList.add('hidden'); container.innerHTML = ''; return; }
+    container.classList.remove('hidden');
+    container.innerHTML = `<div class="flex flex-wrap items-center gap-2"><span class="text-xs font-semibold text-gray-500">Recent:</span>${history.map(item => `<button type="button" class="history-btn text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1.5 rounded-full border border-gray-200" data-query="${escapeHtml(item)}">${escapeHtml(item)}</button>`).join('')}</div>`;
+    container.querySelectorAll('.history-btn').forEach(btn => btn.addEventListener('click', () => { searchInput.value = btn.dataset.query; updateSearchControls(); performSearch(); }));
+}
+
+function updateSearchControls() {
+    clearSearchBtn.classList.toggle('hidden', !searchInput.value);
+    saveSettings();
+}
+
+function showEmptyState(title = 'Your search results will appear here', subtitle = 'Enter a keyword above to scan the PEAK archives.') {
+    resultsContainer.innerHTML = '';
+    resultsContainer.appendChild(emptyState);
+    emptyState.classList.remove('hidden');
+    emptyState.querySelector('p:first-of-type').textContent = title;
+    emptyState.querySelector('p:last-of-type').textContent = subtitle;
+    mainSearchCount.classList.add('hidden');
+}
+
+// ============================================================
+// INDEXEDDB SEARCH CACHE
+// ============================================================
+function openDatabase() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise(resolve => {
+        if (!('indexedDB' in window)) return resolve(null);
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains('documents')) db.createObjectStore('documents', { keyPath: 'key' });
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => resolve(null);
+    });
+    return dbPromise;
+}
+
+async function readCachedText(key) {
+    const db = await openDatabase();
+    if (!db) return null;
+    return new Promise(resolve => {
+        const tx = db.transaction('documents', 'readonly');
+        const req = tx.objectStore('documents').get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+    });
+}
+
+async function writeCachedText(record) {
+    const db = await openDatabase();
+    if (!db) return;
+    await new Promise(resolve => {
+        const tx = db.transaction('documents', 'readwrite');
+        tx.objectStore('documents').put(record);
+        tx.oncomplete = resolve;
+        tx.onerror = resolve;
+    });
+}
+
+function cacheKey(pdfInfo) {
+    return `${APP_VERSION}|${pdfInfo.name}`;
+}
+
+// ============================================================
+// PDF MANAGER
+// ============================================================
+async function getPdfDocument(pdfIndex) {
+    if (pdfCache.has(pdfIndex)) return pdfCache.get(pdfIndex);
+    const pdfInfo = pdfData[pdfIndex];
+    const loadingTask = pdfjsLib.getDocument(getPdfUrl(pdfInfo));
+    const promise = loadingTask.promise.catch(error => {
+        pdfCache.delete(pdfIndex);
+        throw error;
+    });
+    pdfCache.set(pdfIndex, promise);
+    return promise;
+}
+
+async function loadPdfThumbnail(pdfIndex) {
+    if (thumbnailCache.has(pdfIndex)) return thumbnailCache.get(pdfIndex);
+    const pdfInfo = pdfData[pdfIndex];
+    const listItem = $(`pdf-item-${pdfIndex}`);
+    if (!listItem) return;
+    const spinner = listItem.querySelector('.spinner-container');
+    try {
+        const pdfDoc = await getPdfDocument(pdfIndex);
+        const page = await pdfDoc.getPage(1);
+        const container = listItem.querySelector('.canvas-container');
+        const canvas = document.createElement('canvas');
+        canvas.className = 'cursor-pointer absolute top-0 left-0 w-full h-full object-contain';
+        canvas.setAttribute('aria-label', `Open ${pdfInfo.displayName}`);
+        canvas.title = `Open ${pdfInfo.displayName}`;
+        container.appendChild(canvas);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const targetWidth = Math.max(160, container.clientWidth || 180);
+        const scale = Math.min(.55, targetWidth / baseViewport.width);
+        const viewport = page.getViewport({ scale });
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = Math.ceil(viewport.width * ratio);
+        canvas.height = Math.ceil(viewport.height * ratio);
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+        const context = canvas.getContext('2d', { alpha: false });
+        await page.render({ canvasContext: context, viewport, transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : null }).promise;
+        canvas.onclick = () => openPdfViewer(pdfIndex, 1);
+        spinner?.remove();
+        thumbnailCache.set(pdfIndex, canvas);
+    } catch (error) {
+        console.error(`Thumbnail error for ${pdfInfo.name}:`, error);
+        if (spinner) spinner.innerHTML = '<span class="text-red-500 font-semibold text-xs text-center p-2">Failed to load</span>';
+    }
+}
+
+async function extractPdfText(pdfIndex, progressCallback) {
+    const pdfInfo = pdfData[pdfIndex];
+    if (pdfInfo.content !== null) return pdfInfo.content;
+    if (pdfInfo.extractPromise) return pdfInfo.extractPromise;
+
+    pdfInfo.extractPromise = (async () => {
+        const cached = await readCachedText(cacheKey(pdfInfo));
+        if (cached && Array.isArray(cached.content)) {
+            pdfInfo.content = cached.content;
+            return pdfInfo.content;
+        }
+        const pdfDoc = await getPdfDocument(pdfIndex);
+        const extracted = new Array(pdfDoc.numPages);
+        for (let pageNo = 1; pageNo <= pdfDoc.numPages; pageNo++) {
+            const page = await pdfDoc.getPage(pageNo);
+            const textContent = await page.getTextContent();
+            extracted[pageNo - 1] = normalizeText(textContent.items.map(item => item.str).join(' '));
+            if (progressCallback) progressCallback(pageNo, pdfDoc.numPages);
+            if (pageNo % 5 === 0) await yieldToBrowser();
+        }
+        pdfInfo.content = extracted;
+        await writeCachedText({ key: cacheKey(pdfInfo), filename: pdfInfo.name, displayName: pdfInfo.displayName, content: extracted, savedAt: Date.now() });
+        return extracted;
+    })().catch(error => {
+        console.error(`Text extraction error for ${pdfInfo.name}:`, error);
+        pdfInfo.content = [''];
+        throw error;
+    }).finally(() => { pdfInfo.extractPromise = null; });
+
+    return pdfInfo.extractPromise;
+}
+
+function setupIntersectionObserver() {
+    if (!('IntersectionObserver' in window)) {
+        document.querySelectorAll('.pdf-list-item').forEach(item => loadPdfThumbnail(Number(item.dataset.pdfIndex)));
+        return;
+    }
+    const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const item = entry.target;
+            if (item.dataset.thumbnailLoaded !== 'true') {
+                item.dataset.thumbnailLoaded = 'true';
+                loadPdfThumbnail(Number(item.dataset.pdfIndex));
             }
-        ];
-        
-        // --- DOM Elements ---
-        const pdfListCategoriesContainer = document.getElementById('pdf-list-categories');
-        const searchInput = document.getElementById('search-input');
-        const searchBtn = document.getElementById('search-btn');
-        const mainSearchCount = document.getElementById('main-search-count');
-        const clearSearchBtn = document.getElementById('clear-search-btn');
-        const selectAllBtn = document.getElementById('select-all-btn');
-        const deselectAllBtn = document.getElementById('deselect-all-btn');
-        const toggleThumbnailsBtn = document.getElementById('toggle-thumbnails-btn');
-        const caseSensitiveCheck = document.getElementById('case-sensitive-check');
-        const wholeWordCheck = document.getElementById('whole-word-check');
-        const resultsContainer = document.getElementById('results');
-        const resultsSectionContainer = document.getElementById('results-container');
-        const initialLoader = document.getElementById('initial-loader-container');
-        const modal = document.getElementById('pdf-viewer-modal');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        const pdfViewerTitle = document.getElementById('pdf-viewer-title');
-        const viewerSearchInput = document.getElementById('viewer-search-input');
-        const viewerSearchNext = document.getElementById('viewer-search-next');
-        const viewerSearchPrev = document.getElementById('viewer-search-prev');
-        const backToTopBtn = document.getElementById('back-to-top-btn');
+            obs.unobserve(item);
+        });
+    }, { rootMargin: '150px', threshold: .01 });
+    document.querySelectorAll('.pdf-list-item').forEach(item => observer.observe(item));
+}
 
-        // --- State Variables ---
-        let pdfData = [];
-        let currentSearchQuery = '';
-        
-        // Viewer State variables
-        let peakPdfViewer = null;
-        let peakPdfFindController = null;
-        let peakEventBus = null;
-        let peakLinkService = null;
+// ============================================================
+// DOCUMENT UI
+// ============================================================
+function switchTab(index) {
+    activeTabIndex = index;
+    const tabs = tabsHeader.querySelectorAll('[role="tab"]');
+    const panels = pdfListCategoriesContainer.querySelectorAll('.tab-panel');
+    tabs.forEach((tab, i) => {
+        const active = i === index;
+        tab.className = `whitespace-nowrap py-3 px-6 border-b-2 font-${active ? 'bold' : 'medium'} text-sm transition-colors ${active ? 'border-[#041E42] text-[#041E42]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`;
+        tab.setAttribute('aria-selected', String(active));
+    });
+    panels.forEach((panel, i) => panel.classList.toggle('hidden', i !== index));
+}
 
-        document.addEventListener('DOMContentLoaded', initializeApp);
+function populatePdfList() {
+    let globalIndex = 0;
+    PDF_CATEGORIES.forEach((category, catIndex) => {
+        const tab = document.createElement('button');
+        tab.type = 'button';
+        tab.id = `pdf-tab-${catIndex}`;
+        tab.setAttribute('role', 'tab');
+        tab.setAttribute('aria-controls', `tab-panel-${catIndex}`);
+        tab.textContent = `${category.category} (${category.files.length})`;
+        tab.addEventListener('click', () => switchTab(catIndex));
+        tabsHeader.appendChild(tab);
 
-        function initializeApp() {
-            populatePdfList();
-            setupEventListeners();
-            updateSelectionButtons();
-            updateThumbnailButtonState();
-            initialLoader.classList.add('hidden');
-            searchBtn.disabled = false;
-        }
+        const panel = document.createElement('div');
+        panel.id = `tab-panel-${catIndex}`;
+        panel.className = `tab-panel ${catIndex === 0 ? 'block' : 'hidden'}`;
+        panel.setAttribute('role', 'tabpanel');
+        panel.setAttribute('aria-labelledby', tab.id);
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-6 pt-4';
+        panel.appendChild(grid);
+        pdfListCategoriesContainer.appendChild(panel);
 
-        // Tab Switching Logic
-        function switchTab(activeIndex) {
-            const tabs = document.querySelectorAll('#pdf-tabs-header button');
-            const panels = document.querySelectorAll('#pdf-list-categories .tab-panel');
-            
-            tabs.forEach((tab, index) => {
-                if (index === activeIndex) {
-                    tab.className = 'whitespace-nowrap py-3 px-6 border-b-2 font-bold text-sm transition-colors border-[#041E42] text-[#041E42]';
-                    panels[index].classList.remove('hidden');
-                    panels[index].classList.add('block');
-                } else {
-                    tab.className = 'whitespace-nowrap py-3 px-6 border-b-2 font-medium text-sm transition-colors border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
-                    panels[index].classList.remove('block');
-                    panels[index].classList.add('hidden');
-                }
+        category.files.forEach(pdfInfo => {
+            const index = globalIndex++;
+            pdfData.push({ name: pdfInfo.filename, displayName: pdfInfo.displayName, category: category.category, content: null, extractPromise: null });
+            const item = document.createElement('div');
+            item.className = 'pdf-list-item flex flex-col items-center';
+            item.id = `pdf-item-${index}`;
+            item.dataset.pdfIndex = index;
+            item.dataset.thumbnailLoaded = 'false';
+            item.innerHTML = `<div class="canvas-container relative w-full" style="padding-top:141.42%;"><div class="spinner-container absolute inset-0 flex items-center justify-center bg-gray-50 rounded-md border border-gray-100"><div class="h-6 w-6 border-2 border-gray-300 border-t-orange-500 rounded-full animate-spin"></div></div></div><div class="mt-3 text-center w-full min-h-[5rem]"><label for="pdf-check-${index}" class="flex items-start justify-center cursor-pointer group"><input type="checkbox" id="pdf-check-${index}" data-pdf-index="${index}" class="document-checkbox mr-2 h-4 w-4 accent-[#041E42] flex-shrink-0 mt-0.5 cursor-pointer"><span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors break-words leading-snug">${escapeHtml(pdfInfo.displayName)}</span></label></div>`;
+            const checkbox = item.querySelector('.document-checkbox');
+            checkbox.addEventListener('change', () => { saveSelection(); updateSelectionButtons(); });
+            grid.appendChild(item);
+        });
+    });
+    setupIntersectionObserver();
+    loadSavedSelection();
+    updateSelectionButtons();
+}
+
+function updateSelectionButtons() {
+    const checkboxes = document.querySelectorAll('.document-checkbox');
+    const checked = document.querySelectorAll('.document-checkbox:checked').length;
+    const total = checkboxes.length;
+    const active = 'bg-[#F27E23] text-white hover:bg-opacity-90';
+    const inactive = 'bg-gray-200 text-gray-700 hover:bg-gray-300';
+    selectAllBtn.className = `text-sm font-semibold py-1.5 px-3 rounded-md transition-colors ${checked === total ? inactive + ' opacity-50 cursor-not-allowed' : active}`;
+    deselectAllBtn.className = `text-sm font-semibold py-1.5 px-3 rounded-md transition-colors ${checked === 0 ? inactive + ' opacity-50 cursor-not-allowed' : active}`;
+}
+
+function updateThumbnailButtonState() {
+    const hidden = $('document-selection').classList.contains('thumbnails-hidden');
+    toggleThumbnailsBtn.textContent = hidden ? 'Show Thumbnails' : 'Hide Thumbnails';
+    toggleThumbnailsBtn.className = `text-sm font-semibold py-1.5 px-3 rounded-md transition-all shadow-sm border ${hidden ? 'bg-white text-[#041E42] border-[#041E42] hover:bg-gray-100' : 'bg-[#041E42] text-white border-[#041E42] hover:bg-opacity-90'}`;
+}
+
+// ============================================================
+// SEARCH
+// ============================================================
+function renderSearchProgress(title, status, percentage) {
+    resultsContainer.innerHTML = `<div class="w-full max-w-2xl mx-auto p-8 my-8 bg-gray-50 rounded-xl border border-gray-200 shadow-sm search-loading"><div class="mb-4 flex justify-between items-end"><div><h3 class="text-xl font-bold text-[#041E42] mb-1">${escapeHtml(title)}</h3><p class="text-sm font-medium text-gray-500" id="search-status">${escapeHtml(status)}</p></div><span class="text-[#F27E23] font-black text-2xl" id="search-progress-text">${percentage}%</span></div><div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner"><div class="bg-gradient-to-r from-orange-400 to-[#F27E23] h-4 rounded-full progress-bar" id="search-progress-bar" style="width:${percentage}%"></div></div></div>`;
+}
+
+function updateProgress(status, percentage) {
+    const statusEl = $('search-status');
+    const bar = $('search-progress-bar');
+    const text = $('search-progress-text');
+    if (statusEl) statusEl.textContent = status;
+    if (bar) bar.style.width = `${percentage}%`;
+    if (text) text.textContent = `${percentage}%`;
+}
+
+async function performSearch() {
+    const token = ++currentSearchToken;
+    const query = searchInput.value.trim();
+    currentSearchQuery = query;
+    const caseSensitive = caseSensitiveCheck.checked;
+    const wholeWord = wholeWordCheck.checked;
+    saveSettings();
+
+    if (!query) { showEmptyState('Please enter a search term', 'Type a keyword, section number or phrase above.'); return; }
+    const selected = getSelectedIndexes();
+    if (!selected.length) { showEmptyState('No documents selected', 'Select at least one document before searching.'); return; }
+
+    addSearchHistory(query);
+    updateUrlState(query);
+    resultsSectionContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    renderSearchProgress('Preparing search', `0 of ${selected.length} documents`, 0);
+
+    const allResults = [];
+    let totalMatches = 0;
+
+    for (let i = 0; i < selected.length; i++) {
+        if (token !== currentSearchToken) return;
+        const pdfIndex = selected[i];
+        const pdf = pdfData[pdfIndex];
+        updateProgress(`Indexing: ${pdf.displayName}`, Math.round((i / selected.length) * 100));
+        try {
+            await extractPdfText(pdfIndex, (pageNo, totalPages) => {
+                const base = (i / selected.length) * 100;
+                const fraction = (pageNo / totalPages) * (100 / selected.length);
+                updateProgress(`Reading page ${pageNo} of ${totalPages}: ${pdf.displayName}`, Math.min(99, Math.round(base + fraction)));
             });
+        } catch (_) {
+            allResults.push({ pdfIndex, error: true, pages: [] });
+            continue;
         }
 
-        function populatePdfList() {
-            let globalFileIndex = 0;
-            const tabHeader = document.getElementById('pdf-tabs-header');
+        const pages = [];
+        pdf.content.forEach((pageText, pageIndex) => {
+            const matches = findMatches(pageText, query, caseSensitive, wholeWord);
+            if (!matches.length) return;
+            totalMatches += matches.length;
+            pages.push({ pageNum: pageIndex + 1, text: pageText, matches });
+        });
+        if (pages.length) allResults.push({ pdfIndex, error: false, pages });
+        updateProgress(`${i + 1} of ${selected.length} documents scanned`, Math.round(((i + 1) / selected.length) * 100));
+        await yieldToBrowser();
+    }
 
-            PDF_CATEGORIES.forEach((category, catIndex) => {
-                // Create Tab Button
-                const tabBtn = document.createElement('button');
-                tabBtn.className = `whitespace-nowrap py-3 px-6 border-b-2 font-bold text-sm transition-colors ${catIndex === 0 ? 'border-[#041E42] text-[#041E42]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`;
-                tabBtn.textContent = category.category;
-                tabBtn.onclick = () => switchTab(catIndex);
-                if(tabHeader) tabHeader.appendChild(tabBtn);
+    if (token !== currentSearchToken) return;
+    renderResults(allResults, totalMatches, query);
+}
 
-                // Create Tab Panel
-                const categoryContainer = document.createElement('div');
-                categoryContainer.id = `tab-panel-${catIndex}`;
-                categoryContainer.className = `tab-panel ${catIndex === 0 ? 'block' : 'hidden'}`;
-                
-                const gridContainer = document.createElement('div');
-                gridContainer.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-6 pt-4";
-                categoryContainer.appendChild(gridContainer);
-                pdfListCategoriesContainer.appendChild(categoryContainer);
+function renderResults(resultGroups, totalMatches, query) {
+    resultsContainer.innerHTML = '';
+    if (!resultGroups.some(group => group.pages?.length)) {
+        const failed = resultGroups.filter(group => group.error).length;
+        const message = failed ? `No matches found. ${failed} document${failed > 1 ? 's' : ''} could not be indexed.` : 'No results found for your query in the selected documents.';
+        resultsContainer.innerHTML = `<div class="py-12 text-center"><p class="text-gray-600 font-medium text-lg">${escapeHtml(message)}</p><p class="text-sm text-gray-400 mt-2">Try a shorter keyword, a different spelling, or change the search options.</p></div>`;
+        mainSearchCount.classList.add('hidden');
+        return;
+    }
 
-                category.files.forEach(pdfInfo => {
-                    const currentIndex = globalFileIndex++;
-                    pdfData.push({ 
-                        name: pdfInfo.filename, 
-                        displayName: pdfInfo.displayName, 
-                        content: null,
-                        isExtracting: false
-                    });
+    mainSearchCount.textContent = `${totalMatches.toLocaleString()} ${totalMatches === 1 ? 'match' : 'matches'} found`;
+    mainSearchCount.classList.remove('hidden');
 
-                    const listItem = document.createElement('div');
-                    listItem.className = 'pdf-list-item flex flex-col items-center';
-                    listItem.id = `pdf-item-${currentIndex}`;
-                    listItem.dataset.pdfIndex = currentIndex;
-                    listItem.dataset.thumbnailLoaded = 'false';
+    const summary = document.createElement('div');
+    summary.className = 'mb-5 p-4 bg-gray-50 border border-gray-200 rounded-xl flex flex-wrap items-center justify-between gap-3';
+    summary.innerHTML = `<div><span class="font-bold text-[#041E42]">${totalMatches.toLocaleString()}</span> match${totalMatches === 1 ? '' : 'es'} for <span class="font-bold text-[#F27E23]">“${escapeHtml(query)}”</span></div><button type="button" id="new-search-focus" class="text-sm font-semibold text-[#041E42] hover:underline">New search</button>`;
+    resultsContainer.appendChild(summary);
+    $('new-search-focus').addEventListener('click', () => { searchInput.focus(); searchInput.select(); });
 
-                    listItem.innerHTML = `
-                        <div class="canvas-container relative w-full" style="padding-top: 141.42%;">
-                            <div class="spinner-container absolute inset-0 flex items-center justify-center bg-gray-50 rounded-md border border-gray-100">
-                                <div class="h-6 w-6 border-2 border-gray-300 border-t-orange-500 rounded-full animate-spin"></div>
-                            </div>
-                        </div>
-                        <div class="mt-3 text-center w-full h-20">
-                            <label for="pdf-check-${currentIndex}" class="flex items-start justify-center cursor-pointer group">
-                                <input type="checkbox" id="pdf-check-${currentIndex}" data-pdf-index="${currentIndex}" class="mr-2 h-4 w-4 accent-[#041E42] flex-shrink-0 mt-0.5 cursor-pointer" checked onchange="updateSelectionButtons()">
-                                <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors break-words leading-snug">${pdfInfo.displayName}</span>
-                            </label>
-                        </div>
-                    `;
-                    gridContainer.appendChild(listItem);
-                });
+    resultGroups.filter(group => group.pages?.length).forEach(group => {
+        const pdf = pdfData[group.pdfIndex];
+        const card = document.createElement('article');
+        card.className = 'mb-6 p-5 md:p-6 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow';
+        const totalPages = group.pages.length;
+        card.innerHTML = `<div class="flex items-start gap-3 mb-4 border-b border-gray-100 pb-4"><div class="bg-orange-100 p-2.5 rounded-lg shadow-inner flex-shrink-0"><svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-[#F27E23]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253"></path></svg></div><div><h3 class="text-lg md:text-xl font-bold text-[#041E42]">${escapeHtml(pdf.displayName)}</h3><p class="text-xs text-gray-500 mt-1">${totalPages} matching page${totalPages === 1 ? '' : 's'}</p></div></div>`;
+
+        group.pages.forEach(page => {
+            const pageDiv = document.createElement('div');
+            pageDiv.className = 'mt-4 pl-4 border-l-4 border-[#041E42] bg-gray-50 p-4 rounded-r-xl relative group';
+            const sectionName = detectSectionName(page.text, page.matches[0].index);
+            const title = `Page ${page.pageNum}${sectionName ? ` | ${sectionName}` : ''}`;
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'float-right ml-3 mb-2 bg-white border border-gray-200 text-[#041E42] font-bold py-1.5 px-3 rounded-md hover:bg-[#041E42] hover:text-white transition-all text-sm shadow-sm';
+            button.textContent = 'View Match →';
+            button.addEventListener('click', () => openPdfViewer(group.pdfIndex, page.pageNum));
+            pageDiv.innerHTML = `<p class="font-bold text-gray-800 mb-3 text-base">📄 ${escapeHtml(title)}</p>`;
+            pageDiv.appendChild(button);
+
+            page.matches.slice(0, MAX_VISIBLE_SNIPPETS_PER_PAGE).forEach(match => {
+                const snippet = document.createElement('p');
+                snippet.className = 'text-gray-700 leading-relaxed mt-2 text-sm bg-white p-3 rounded-md border border-gray-100 shadow-sm font-medium';
+                snippet.innerHTML = createHighlightedSnippet(page.text, match.index, match.length);
+                pageDiv.appendChild(snippet);
             });
-            setupIntersectionObserver();
-        }
-
-        function setupIntersectionObserver() {
-            const options = { rootMargin: '50px', threshold: 0.1 };
-            const observer = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const listItem = entry.target;
-                        if (listItem.dataset.thumbnailLoaded === 'false') {
-                            const pdfIndex = parseInt(listItem.dataset.pdfIndex);
-                            loadPdfThumbnail(pdfIndex);
-                            listItem.dataset.thumbnailLoaded = 'true';
-                        }
-                        observer.unobserve(listItem);
-                    }
-                });
-            }, options);
-
-            document.querySelectorAll('.pdf-list-item').forEach(item => {
-                observer.observe(item);
-            });
-        }
-
-        async function loadPdfThumbnail(pdfIndex) {
-            const pdfInfo = pdfData[pdfIndex];
-            const listItem = document.getElementById(`pdf-item-${pdfIndex}`);
-            const spinnerContainer = listItem.querySelector('.spinner-container');
-            
-            try {
-                const pdfDoc = await pdfjsLib.getDocument(pdfInfo.name).promise;
-                const page = await pdfDoc.getPage(1);
-                const canvas = document.createElement('canvas');
-                canvas.className = 'cursor-pointer absolute top-0 left-0 w-full h-full object-contain';
-                listItem.querySelector('.canvas-container').appendChild(canvas);
-                
-                canvas.onclick = () => openPdfViewer(pdfIndex, 1);
-                const viewport = page.getViewport({ scale: 1.0 });
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                const context = canvas.getContext('2d');
-                await page.render({ canvasContext: context, viewport: viewport }).promise;
-                
-                if (spinnerContainer) spinnerContainer.remove();
-            } catch (error) {
-                console.error(`Error loading thumbnail for ${pdfInfo.name}:`, error);
-                if (spinnerContainer) {
-                   spinnerContainer.innerHTML = `<span class="text-red-500 font-semibold text-xs text-center p-2">Failed to load</span>`;
-                }
+            if (page.matches.length > MAX_VISIBLE_SNIPPETS_PER_PAGE) {
+                const more = document.createElement('p');
+                more.className = 'text-xs text-gray-500 mt-2 font-semibold';
+                more.textContent = `+ ${page.matches.length - MAX_VISIBLE_SNIPPETS_PER_PAGE} more match${page.matches.length - MAX_VISIBLE_SNIPPETS_PER_PAGE === 1 ? '' : 'es'} on this page`;
+                pageDiv.appendChild(more);
             }
-        }
-        
-        async function extractPdfText(pdfIndex) {
-            const pdfInfo = pdfData[pdfIndex];
-            if (pdfInfo.content !== null || pdfInfo.isExtracting) return;
+            card.appendChild(pageDiv);
+        });
+        resultsContainer.appendChild(card);
+    });
+}
 
-            pdfInfo.isExtracting = true;
-            try {
-                const pdfDoc = await pdfjsLib.getDocument(pdfInfo.name).promise;
-                let extractedText = [];
-                for (let j = 1; j <= pdfDoc.numPages; j++) {
-                    const page = await pdfDoc.getPage(j);
-                    const textContent = await page.getTextContent();
-                    extractedText.push(textContent.items.map(item => item.str).join(' '));
-                }
-                pdfData[pdfIndex].content = extractedText;
-            } catch (error) {
-                console.error(`Failed to extract text from ${pdfInfo.name}:`, error);
-                pdfData[pdfIndex].content = ["Error: Could not load document content."];
-            } finally {
-                pdfData[pdfIndex].isExtracting = false;
-            }
-        }
+function detectSectionName(pageText, matchIndex) {
+    const before = pageText.slice(0, matchIndex);
+    const regex = /(?:Section|Seksyen|Peraturan|Regulation|Part|Bahagian|Rule|Kaedah)\s+[A-Z0-9]+(?:\.[A-Z0-9]+)*/gi;
+    let found = '';
+    let match;
+    while ((match = regex.exec(before)) !== null) found = match[0];
+    return found ? found.replace(/\s+/g, ' ').trim() : '';
+}
 
-        function updateSelectionButtons() {
-            const checkboxes = document.querySelectorAll('#pdf-list-categories input[type="checkbox"]');
-            const checkedCount = document.querySelectorAll('#pdf-list-categories input[type="checkbox"]:checked').length;
-            const totalCount = checkboxes.length;
+// ============================================================
+// PDF VIEWER
+// ============================================================
+function initializeViewer() {
+    if (peakPdfViewer) return;
+    peakEventBus = new pdfjsViewer.EventBus();
+    peakLinkService = new pdfjsViewer.PDFLinkService({ eventBus: peakEventBus });
+    peakPdfFindController = new pdfjsViewer.PDFFindController({ eventBus: peakEventBus, linkService: peakLinkService });
+    peakPdfViewer = new pdfjsViewer.PDFViewer({ container: $('viewerContainer'), eventBus: peakEventBus, linkService: peakLinkService, findController: peakPdfFindController });
+    peakLinkService.setViewer(peakPdfViewer);
+    peakEventBus.on('pagesinit', () => {
+        peakPdfViewer.currentScaleValue = 'page-width';
+        setTimeout(() => {
+            if (pendingPageNum) peakPdfViewer.currentPageNumber = pendingPageNum;
+            executeViewerSearch();
+        }, 100);
+    });
+}
 
-            const activeClass = "bg-[#F27E23] text-white hover:bg-opacity-90";
-            const inactiveClass = "bg-gray-200 text-gray-700 hover:bg-gray-300";
+function executeViewerSearch(findAgain = false, findPrevious = false) {
+    if (!peakPdfFindController) return;
+    const query = viewerSearchInput.value.trim();
+    if (!query) {
+        peakPdfFindController.executeCommand('find', { query: '' });
+        return;
+    }
+    peakPdfFindController.executeCommand(findAgain ? 'findagain' : 'find', {
+        query,
+        highlightAll: true,
+        phraseSearch: true,
+        caseSensitive: caseSensitiveCheck.checked,
+        findPrevious
+    });
+}
 
-            if (checkedCount === 0) {
-                selectAllBtn.className = `text-sm font-semibold py-1.5 px-3 rounded-md transition-colors ${activeClass}`;
-                deselectAllBtn.className = `text-sm font-semibold py-1.5 px-3 rounded-md transition-colors ${inactiveClass} opacity-50 cursor-not-allowed`;
-            } else if (checkedCount === totalCount) {
-                selectAllBtn.className = `text-sm font-semibold py-1.5 px-3 rounded-md transition-colors ${inactiveClass} opacity-50 cursor-not-allowed`;
-                deselectAllBtn.className = `text-sm font-semibold py-1.5 px-3 rounded-md transition-colors ${activeClass}`;
-            } else {
-                selectAllBtn.className = `text-sm font-semibold py-1.5 px-3 rounded-md transition-colors ${inactiveClass}`;
-                deselectAllBtn.className = `text-sm font-semibold py-1.5 px-3 rounded-md transition-colors ${inactiveClass}`;
-            }
-        }
-        
-        function updateThumbnailButtonState() {
-            const isHidden = document.getElementById('document-selection').classList.contains('thumbnails-hidden');
-            toggleThumbnailsBtn.className = `text-sm font-semibold py-1.5 px-3 rounded-md transition-all shadow-sm border ${isHidden ? 'bg-white text-[#041E42] border-[#041E42] hover:bg-gray-100' : 'bg-[#041E42] text-white border-[#041E42] hover:bg-opacity-90'}`;
-        }
-        
-        function setupEventListeners() {
-            selectAllBtn.addEventListener('click', () => {
-                document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
-                updateSelectionButtons();
-            });
+function openPdfViewer(pdfIndex, pageNumToShow = 1) {
+    const pdfItem = pdfData[pdfIndex];
+    if (!pdfItem) return;
+    previousFocusedElement = document.activeElement;
+    pdfViewerTitle.textContent = pdfItem.displayName;
+    viewerSearchInput.value = currentSearchQuery;
+    pendingPageNum = pageNumToShow;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.classList.add('modal-open');
+    initializeViewer();
 
-            deselectAllBtn.addEventListener('click', () => {
-                document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-                updateSelectionButtons();
-            });
+    const pdfUrl = getPdfUrl(pdfItem);
+    if (peakPdfViewer.pdfDocument && currentViewerPdfUrl === pdfUrl) {
+        peakPdfViewer.currentPageNumber = pageNumToShow;
+        setTimeout(() => executeViewerSearch(), 100);
+        viewerSearchInput.focus();
+        return;
+    }
 
-            toggleThumbnailsBtn.addEventListener('click', () => {
-                document.getElementById('document-selection').classList.toggle('thumbnails-hidden');
-                updateThumbnailButtonState();
-            });
+    currentViewerPdfUrl = pdfUrl;
+    const container = $('viewerContainer');
+    container.style.opacity = '.5';
+    peakPdfViewer.setDocument(null);
+    getPdfDocument(pdfIndex).then(pdfDocument => {
+        if (currentViewerPdfUrl !== pdfUrl) return;
+        peakPdfViewer.setDocument(pdfDocument);
+        peakLinkService.setDocument(pdfDocument, null);
+        container.style.opacity = '1';
+    }).catch(error => {
+        console.error('Viewer error:', error);
+        container.style.opacity = '1';
+        const errorBox = document.createElement('div');
+        errorBox.className = 'absolute inset-0 flex items-center justify-center p-6 pointer-events-none';
+        errorBox.innerHTML = '<p class="text-red-500 font-bold bg-white p-4 rounded shadow pointer-events-auto">Unable to load this PDF. Please check that the file exists.</p>';
+        container.appendChild(errorBox);
+    });
+}
 
-            searchInput.addEventListener('input', () => {
-                clearSearchBtn.classList.toggle('hidden', !searchInput.value);
-                if(!searchInput.value) {
-                    mainSearchCount.classList.add('hidden');
-                    mainSearchCount.textContent = '';
-                }
-            });
+function closePdfViewer() {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.classList.remove('modal-open');
+    if (peakPdfFindController) peakPdfFindController.executeCommand('find', { query: '' });
+    previousFocusedElement?.focus?.();
+}
 
-            clearSearchBtn.addEventListener('click', () => {
-                searchInput.value = '';
-                resultsContainer.innerHTML = `
-                     <div class="flex flex-col items-center justify-center py-16 text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                        <svg class="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg>
-                        <p class="text-xl font-semibold text-gray-500 mb-1">Search cleared</p>
-                    </div>`;
-                mainSearchCount.classList.add('hidden');
-                clearSearchBtn.classList.add('hidden');
-            });
+// ============================================================
+// URL / DEEP LINKING
+// ============================================================
+function updateUrlState(query) {
+    try {
+        const url = new URL(window.location.href);
+        if (query) url.searchParams.set('q', query); else url.searchParams.delete('q');
+        window.history.replaceState({}, '', url);
+    } catch (_) {}
+}
 
-            searchBtn.addEventListener('click', performSearch);
-            searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); });
-            
-            closeModalBtn.addEventListener('click', closePdfViewer);
+function restoreUrlSearch() {
+    try {
+        const query = new URLSearchParams(window.location.search).get('q');
+        if (query) { searchInput.value = query; updateSearchControls(); setTimeout(() => performSearch(), 200); }
+    } catch (_) {}
+}
 
-            viewerSearchInput.addEventListener('input', (e) => {
-                if (peakPdfFindController) {
-                    peakPdfFindController.executeCommand('find', {
-                        query: e.target.value,
-                        highlightAll: true,
-                        phraseSearch: wholeWordCheck.checked
-                    });
-                }
-            });
+// ============================================================
+// EVENTS / INITIALIZATION
+// ============================================================
+function setupEventListeners() {
+    selectAllBtn.addEventListener('click', () => {
+        document.querySelectorAll('.document-checkbox').forEach(cb => cb.checked = true);
+        saveSelection(); updateSelectionButtons();
+    });
+    deselectAllBtn.addEventListener('click', () => {
+        document.querySelectorAll('.document-checkbox').forEach(cb => cb.checked = false);
+        saveSelection(); updateSelectionButtons();
+    });
+    toggleThumbnailsBtn.addEventListener('click', () => {
+        $('document-selection').classList.toggle('thumbnails-hidden');
+        updateThumbnailButtonState();
+    });
+    searchInput.addEventListener('input', updateSearchControls);
+    searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') performSearch(); });
+    searchBtn.addEventListener('click', performSearch);
+    clearSearchBtn.addEventListener('click', () => { ++currentSearchToken; searchInput.value = ''; updateSearchControls(); updateUrlState(''); showEmptyState('Search cleared', 'Enter a keyword above to scan the PEAK archives.'); searchInput.focus(); });
+    caseSensitiveCheck.addEventListener('change', saveSettings);
+    wholeWordCheck.addEventListener('change', saveSettings);
+    closeModalBtn.addEventListener('click', closePdfViewer);
+    viewerSearchInput.addEventListener('input', () => executeViewerSearch());
+    viewerSearchInput.addEventListener('keydown', e => { if (e.key === 'Enter') executeViewerSearch(true, e.shiftKey); });
+    viewerSearchNext.addEventListener('click', () => executeViewerSearch(true, false));
+    viewerSearchPrev.addEventListener('click', () => executeViewerSearch(true, true));
+    modal.addEventListener('mousedown', e => { if (e.target === modal) closePdfViewer(); });
 
-            viewerSearchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    if (peakPdfFindController) {
-                        peakPdfFindController.executeCommand('findagain', {
-                            query: viewerSearchInput.value,
-                            highlightAll: true,
-                            phraseSearch: wholeWordCheck.checked,
-                            findPrevious: e.shiftKey
-                        });
-                    }
-                }
-            });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) { closePdfViewer(); return; }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); searchInput.focus(); searchInput.select(); }
+        if (e.key === '/' && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName) && !modal.classList.contains('flex')) { e.preventDefault(); searchInput.focus(); }
+    });
 
-            viewerSearchNext.addEventListener('click', () => {
-                if (peakPdfFindController) {
-                    peakPdfFindController.executeCommand('findagain', {
-                        query: viewerSearchInput.value,
-                        highlightAll: true,
-                        phraseSearch: wholeWordCheck.checked,
-                        findPrevious: false
-                    });
-                }
-            });
+    window.addEventListener('scroll', () => backToTopBtn.classList.toggle('hidden', window.scrollY <= 300), { passive: true });
+    backToTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
-            viewerSearchPrev.addEventListener('click', () => {
-                if (peakPdfFindController) {
-                    peakPdfFindController.executeCommand('findagain', {
-                        query: viewerSearchInput.value,
-                        highlightAll: true,
-                        phraseSearch: wholeWordCheck.checked,
-                        findPrevious: true
-                    });
-                }
-            });
+    document.querySelectorAll('.collapsible-section > button').forEach(button => button.addEventListener('click', () => {
+        const section = button.parentElement;
+        const open = section.classList.toggle('open');
+        button.setAttribute('aria-expanded', String(open));
+    }));
+}
 
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
-                    closePdfViewer();
-                }
-            });
+function initializeApp() {
+    populatePdfList();
+    setupEventListeners();
+    loadSettings();
+    renderSearchHistory();
+    updateThumbnailButtonState();
+    initialLoader.classList.add('hidden');
+    searchBtn.disabled = false;
+    restoreUrlSearch();
+}
 
-            window.addEventListener('scroll', () => {
-                if (window.scrollY > 300) {
-                    backToTopBtn.classList.remove('hidden');
-                } else {
-                    backToTopBtn.classList.add('hidden');
-                }
-            });
-            backToTopBtn.addEventListener('click', () => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            });
-
-            document.querySelectorAll('.collapsible-section > button').forEach(button => {
-                button.addEventListener('click', () => {
-                    button.parentElement.classList.toggle('open');
-                });
-            });
-        }
-        
-        async function performSearch() {
-            currentSearchQuery = searchInput.value;
-            const isCaseSensitive = caseSensitiveCheck.checked;
-            const isWholeWord = wholeWordCheck.checked;
-            let query = currentSearchQuery.trim();
-
-            if (!query) {
-                resultsContainer.innerHTML = '<p class="text-red-500 font-medium">Please enter a search term.</p>';
-                mainSearchCount.classList.add('hidden');
-                return;
-            }
-            
-            const selectedPdfIndexes = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt(cb.dataset.pdfIndex));
-            if (selectedPdfIndexes.length === 0) {
-                resultsContainer.innerHTML = '<p class="text-red-500 font-medium">Please select at least one document filter above.</p>';
-                mainSearchCount.classList.add('hidden');
-                return;
-            }
-            
-            // Auto-scroll to results
-            setTimeout(() => {
-                resultsSectionContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 50);
-
-            // Render Progress Bar UI
-            resultsContainer.innerHTML = `
-                <div class="w-full max-w-2xl mx-auto p-8 my-8 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-                    <div class="mb-4 flex justify-between items-end">
-                        <div>
-                            <h3 class="text-xl font-bold text-[#041E42] mb-1">Scanning Archives</h3>
-                            <p class="text-sm font-medium text-gray-500" id="search-status">Initializing scanner...</p>
-                        </div>
-                        <span class="text-[#F27E23] font-black text-2xl" id="search-progress-text">0%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
-                        <div class="bg-gradient-to-r from-orange-400 to-[#F27E23] h-4 rounded-full transition-all duration-300 ease-out" id="search-progress-bar" style="width: 0%"></div>
-                    </div>
-                </div>`;
-                
-            const searchStatus = document.getElementById('search-status');
-            const searchProgressBar = document.getElementById('search-progress-bar');
-            const searchProgressText = document.getElementById('search-progress-text');
-
-            let foundResults = false;
-            let totalMatches = 0;
-            const flags = isCaseSensitive ? 'g' : 'gi';
-            const term = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-            const regex = new RegExp(isWholeWord ? `\\b${term}\\b` : term, flags);
-            
-            // Smart Heuristic Regex for Legal Documents
-            const sectionRegex = /(?:Section|Seksyen|Peraturan|Regulation|Part|Bahagian|Rule|Kaedah)\s+([A-Z0-9]+(?:\.[A-Z0-9]+)*)/gi;
-            
-            const tempResultsContainer = document.createDocumentFragment();
-
-            for (let i = 0; i < selectedPdfIndexes.length; i++) {
-                const index = selectedPdfIndexes[i];
-                const pdf = pdfData[index];
-                if (!pdf) continue;
-
-                // Update Progress
-                const progressPercentage = Math.round((i / selectedPdfIndexes.length) * 100);
-                searchProgressBar.style.width = `${progressPercentage}%`;
-                searchProgressText.textContent = `${progressPercentage}%`;
-                searchStatus.textContent = `Reading: ${pdf.displayName}`;
-
-                if (pdf.content === null) {
-                    await extractPdfText(index);
-                }
-
-                if (!pdf.content || pdf.content[0].startsWith("Error:")) continue;
-
-                const fileResultContainer = document.createElement('div');
-                let foundInFile = false;
-                
-                pdf.content.forEach((pageText, pageIndex) => {
-                    let match;
-                    let pageSnippets = [];
-                    let firstMatchIndex = -1;
-                    regex.lastIndex = 0;
-                    
-                    while ((match = regex.exec(pageText)) !== null) {
-                        if (!foundInFile) foundInFile = true;
-                        if (firstMatchIndex === -1) firstMatchIndex = match.index;
-                        totalMatches++;
-                        
-                        // Extract Snippet Context
-                        const contextRadius = 80;
-                        const snippetStart = Math.max(0, match.index - contextRadius);
-                        const snippetEnd = Math.min(pageText.length, match.index + match[0].length + contextRadius);
-                        let snippet = pageText.substring(snippetStart, snippetEnd);
-                        snippet = snippet.replace(new RegExp(term, flags), `<strong class="bg-[#F27E23] bg-opacity-30 text-[#F27E23] font-bold px-1 rounded-sm">$&</strong>`);
-                        if (snippetStart > 0) snippet = '... ' + snippet;
-                        if (snippetEnd < pageText.length) snippet = snippet + ' ...';
-                        pageSnippets.push(snippet);
-                    }
-
-                    if (pageSnippets.length > 0) {
-                        const pageNum = pageIndex + 1;
-                        
-                        // Heuristic Parsing for Title
-                        let sectionName = "";
-                        if (firstMatchIndex !== -1) {
-                            const textBeforeMatches = pageText.substring(0, firstMatchIndex);
-                            let secMatch;
-                            sectionRegex.lastIndex = 0; // Reset regex
-                            while ((secMatch = sectionRegex.exec(textBeforeMatches)) !== null) {
-                                // Format beautifully (e.g. "Section 14" from "sEcTioN 14")
-                                let words = secMatch[0].split(/\s+/);
-                                if (words.length > 1) {
-                                    sectionName = words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase() + " " + words.slice(1).join(" ");
-                                } else {
-                                    sectionName = secMatch[0].charAt(0).toUpperCase() + secMatch[0].slice(1).toLowerCase();
-                                }
-                            }
-                        }
-                        
-                        let displayTitle = `Page ${pageNum}`;
-                        if(sectionName) {
-                            displayTitle += ` <span class="mx-2 text-gray-300">|</span> <span class="text-[#F27E23] font-semibold">${sectionName}</span>`;
-                        }
-
-                        const pageResultDiv = document.createElement('div');
-                        pageResultDiv.className = 'mt-4 pl-4 border-l-4 border-[#041E42] bg-gray-50 p-5 rounded-r-xl relative group shadow-sm';
-                        pageResultDiv.innerHTML = `<p class="font-bold text-gray-800 mb-3 flex items-center gap-2 text-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[#F27E23]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                            ${displayTitle}
-                        </p>`;
-                        
-                        const goToPageBtn = document.createElement('button');
-                        goToPageBtn.innerHTML = 'View Match &rarr;';
-                        goToPageBtn.className = 'absolute top-4 right-4 bg-white border border-gray-200 text-[#041E42] font-bold py-1.5 px-4 rounded-md hover:bg-[#041E42] hover:text-white transition-all text-sm shadow-sm';
-                        goToPageBtn.onclick = () => openPdfViewer(index, pageNum);
-                        pageResultDiv.appendChild(goToPageBtn);
-                        
-                        pageSnippets.forEach(snippetText => {
-                            const snippetP = document.createElement('p');
-                            snippetP.className = 'text-gray-700 leading-relaxed mt-2 text-sm bg-white p-4 rounded-md border border-gray-100 shadow-sm font-medium';
-                            snippetP.innerHTML = snippetText;
-                            pageResultDiv.appendChild(snippetP);
-                        });
-                        fileResultContainer.appendChild(pageResultDiv);
-                    }
-                });
-                
-                if (foundInFile) {
-                    foundResults = true;
-                    const resultDiv = document.createElement('div');
-                    resultDiv.className = 'mb-6 p-6 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow';
-                    resultDiv.innerHTML = `
-                        <div class="flex items-center gap-3 mb-2 border-b border-gray-100 pb-4">
-                            <div class="bg-orange-100 p-2.5 rounded-lg shadow-inner">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-[#F27E23]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                            </div>
-                            <h3 class="text-xl font-bold text-[#041E42]">${pdf.displayName}</h3>
-                        </div>`;
-                    resultDiv.appendChild(fileResultContainer);
-                    tempResultsContainer.appendChild(resultDiv);
-                }
-            }
-            
-            resultsContainer.innerHTML = '';
-            if (!foundResults) {
-                resultsContainer.innerHTML = '<p class="text-gray-600 font-medium text-lg py-8 text-center">No results found for your query in the selected documents.</p>';
-                mainSearchCount.classList.add('hidden');
-            } else {
-                resultsContainer.appendChild(tempResultsContainer);
-                mainSearchCount.textContent = `${totalMatches} matches found`;
-                mainSearchCount.classList.remove('hidden');
-            }
-        }
-        
-        function openPdfViewer(pdfIndex, pageNumToShow) {
-            const pdfItem = pdfData[pdfIndex];
-            if (!pdfItem) return;
-
-            pdfViewerTitle.textContent = pdfItem.displayName;
-            const pdfUrl = new URL(pdfItem.name, window.location.href).href;
-            
-            viewerSearchInput.value = currentSearchQuery;
-            
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.body.classList.add('overflow-hidden');
-
-            const container = document.getElementById('viewerContainer');
-
-            // Initialize the custom viewer precisely once
-            if (!peakPdfViewer) {
-                peakEventBus = new pdfjsViewer.EventBus();
-                peakLinkService = new pdfjsViewer.PDFLinkService({ eventBus: peakEventBus });
-                peakPdfFindController = new pdfjsViewer.PDFFindController({ 
-                    eventBus: peakEventBus,
-                    linkService: peakLinkService
-                });
-                
-                peakPdfViewer = new pdfjsViewer.PDFViewer({
-                    container: container,
-                    eventBus: peakEventBus,
-                    linkService: peakLinkService,
-                    findController: peakPdfFindController,
-                });
-
-                peakLinkService.setViewer(peakPdfViewer);
-
-                // Attach listener to trigger jump & search once pages render
-                peakEventBus.on('pagesinit', function () {
-                    peakPdfViewer.currentScaleValue = 'page-width';
-                    
-                    // Small delay ensures rendering catches up before scrolling to match
-                    setTimeout(() => {
-                        if (window.pendingPageNumToShow) {
-                            peakPdfViewer.currentPageNumber = window.pendingPageNumToShow;
-                        }
-                        if (currentSearchQuery) {
-                            peakPdfFindController.executeCommand('find', {
-                                query: currentSearchQuery,
-                                phraseSearch: wholeWordCheck.checked,
-                                caseSensitive: caseSensitiveCheck.checked,
-                                highlightAll: true,
-                                findPrevious: false
-                            });
-                        }
-                    }, 100);
-                });
-            }
-
-            // Check if we are opening a NEW document or navigating inside the ALREADY open document
-            if (peakPdfViewer.pdfDocument && peakPdfViewer._currentUrl === pdfUrl) {
-                 // Fast track: Document is already rendered, just jump and highlight
-                 peakPdfViewer.currentPageNumber = pageNumToShow;
-                 if (currentSearchQuery) {
-                     setTimeout(() => {
-                         peakPdfFindController.executeCommand('find', {
-                             query: currentSearchQuery,
-                             phraseSearch: wholeWordCheck.checked,
-                             caseSensitive: caseSensitiveCheck.checked,
-                             highlightAll: true,
-                             findPrevious: false
-                         });
-                     }, 100);
-                 }
-            } else {
-                // Load New Document
-                window.pendingPageNumToShow = pageNumToShow;
-                peakPdfViewer._currentUrl = pdfUrl; 
-                
-                container.style.opacity = '0.5'; // Visual loading cue
-                
-                const loadingTask = pdfjsLib.getDocument(pdfUrl);
-                loadingTask.promise.then(function(pdfDocument) {
-                    peakPdfViewer.setDocument(pdfDocument);
-                    peakLinkService.setDocument(pdfDocument, null); // CRITICAL for navigation
-                    container.style.opacity = '1';
-                }).catch(function(error) {
-                    console.error("Error loading PDF: ", error);
-                    container.style.opacity = '1';
-                    container.innerHTML = `<div class="flex items-center justify-center h-full"><p class="text-red-500 font-bold bg-white p-4 rounded shadow">Error loading document. Verify file exists at ${pdfUrl}</p></div>`;
-                });
-            }
-        }
-
-        function closePdfViewer() {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            document.body.classList.remove('overflow-hidden');
-            
-            // Clean up highlight controller state so it doesn't leak between searches
-            if (peakPdfFindController) {
-                peakPdfFindController.executeCommand('find', { query: '' }); 
-            }
-        }
-
-    </script>
+document.addEventListener('DOMContentLoaded', initializeApp);
+</script>
 </body>
 </html>
