@@ -45,7 +45,6 @@
         mark.current-match {
             background-color: rgba(67, 185, 255, 0.7); /* Blue highlight for current match */
         }
-        /* --- Improvement 6b: Styles for Collapsible Sections on Mobile --- */
         @media (max-width: 767px) {
             .collapsible-content {
                 display: none;
@@ -70,16 +69,55 @@
         </header>
 
         <main>
+            <!-- REORDERED: Search Content is now at the top (Familiar Search Pattern) -->
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-8 collapsible-section open">
+                 <button class="w-full flex justify-between items-center text-left md:hidden mb-4">
+                    <h2 class="text-2xl font-semibold text-[#041E42]">Search Archive</h2>
+                    <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                    <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
+                </button>
+                <div class="collapsible-content">
+                    <h2 class="text-2xl font-semibold mb-4 text-[#041E42] hidden md:block">Search Archive</h2>
+                    <div class="relative">
+                        <!-- Added familiar magnifying glass icon inside the search bar -->
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <input type="text" id="search-input" placeholder="Enter search term..." class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#041E42]">
+                        <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden text-2xl font-bold">&times;</button>
+                    </div>
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mt-4 gap-4">
+                        <div class="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="case-sensitive-check" class="h-4 w-4 accent-[#041E42]">
+                                <span class="ml-2 text-gray-700">Case-sensitive</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="whole-word-check" class="h-4 w-4 accent-[#041E42]">
+                                <span class="ml-2 text-gray-700">Match whole word</span>
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-4 w-full md:w-auto justify-end">
+                            <span id="main-search-count" class="text-gray-600 text-sm font-semibold"></span>
+                            <button id="search-btn" class="bg-[#041E42] text-white font-bold py-3 px-8 rounded-lg hover:bg-opacity-90 transition disabled:bg-gray-400 w-full md:w-auto">Search</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REORDERED: Document Selection now acts as a Filter beneath the main search -->
             <div id="document-selection" class="bg-white p-6 rounded-lg shadow-lg mb-8 collapsible-section open">
                 <button class="w-full flex justify-between items-center text-left md:hidden mb-4">
-                    <h2 class="text-2xl font-semibold text-[#041E42]">1. Select Documents</h2>
+                    <h2 class="text-2xl font-semibold text-[#041E42]">Filter Documents</h2>
                     <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                     <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
                 </button>
 
                 <div class="collapsible-content">
                     <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
-                        <h2 class="text-2xl font-semibold text-[#041E42] hidden md:block">1. Select Documents</h2>
+                        <h2 class="text-2xl font-semibold text-[#041E42] hidden md:block">Filter Documents</h2>
                         <div class="flex gap-2 flex-wrap">
                             <button id="toggle-thumbnails-btn" class="text-sm font-semibold py-1 px-3 rounded-md transition-colors">Toggle Thumbnails</button>
                             <button id="select-all-btn" class="text-sm font-semibold py-1 px-3 rounded-md transition-colors">Select All</button>
@@ -94,45 +132,15 @@
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow-lg mb-8 collapsible-section open">
-                 <button class="w-full flex justify-between items-center text-left md:hidden mb-4">
-                    <h2 class="text-2xl font-semibold text-[#041E42]">2. Search Content</h2>
-                    <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
-                    <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
-                </button>
-                <div class="collapsible-content">
-                    <h2 class="text-2xl font-semibold mb-4 text-[#041E42] hidden md:block">2. Search Content</h2>
-                    <div class="relative">
-                        <input type="text" id="search-input" placeholder="Enter search term..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#041E42]">
-                        <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden text-2xl font-bold">&times;</button>
-                    </div>
-                    <div class="flex justify-between items-center mt-4">
-                        <div class="flex gap-6">
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" id="case-sensitive-check" class="h-4 w-4 accent-[#041E42]">
-                                <span class="ml-2 text-gray-700">Case-sensitive</span>
-                            </label>
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" id="whole-word-check" class="h-4 w-4 accent-[#041E42]">
-                                <span class="ml-2 text-gray-700">Match whole word only</span>
-                            </label>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span id="main-search-count" class="text-gray-600 text-sm font-semibold"></span>
-                            <button id="search-btn" class="bg-[#041E42] text-white font-bold py-3 px-8 rounded-lg hover:bg-opacity-90 transition disabled:bg-gray-400">Search</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+            <!-- Results Section stays at the bottom (Logical conclusion) -->
             <div id="results-container" class="bg-white p-6 rounded-lg shadow-lg collapsible-section open">
                  <button class="w-full flex justify-between items-center text-left md:hidden mb-4">
-                    <h2 class="text-2xl font-semibold text-[#041E42]">3. Results</h2>
+                    <h2 class="text-2xl font-semibold text-[#041E42]">Search Results</h2>
                     <svg class="w-6 h-6 chevron-down" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                     <svg class="w-6 h-6 chevron-up" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg>
                 </button>
                 <div id="results" class="collapsible-content text-gray-700">
-                     <h2 class="text-2xl font-semibold mb-4 text-[#041E42] hidden md:block">3. Results</h2>
+                     <h2 class="text-2xl font-semibold mb-4 text-[#041E42] hidden md:block">Search Results</h2>
                     <p>Search results will appear here.</p>
                 </div>
             </div>
@@ -160,7 +168,6 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
         </svg>
     </button>
-
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
@@ -229,7 +236,6 @@
         const backToTopBtn = document.getElementById('back-to-top-btn');
 
         // --- State Variables ---
-        // Improvement 1b: pdfData now only stores metadata initially. 'content' is loaded on demand.
         let pdfData = [];
         let currentSearchQuery = '';
 
@@ -256,16 +262,14 @@
 
                 category.files.forEach(pdfInfo => {
                     const currentIndex = globalFileIndex++;
-                    // Improvement 1b: 'content' is null initially.
                     pdfData.push({ 
                         name: pdfInfo.filename, 
                         displayName: pdfInfo.displayName, 
                         content: null,
-                        isExtracting: false // Flag to prevent multiple extractions
+                        isExtracting: false
                     });
 
                     const listItem = document.createElement('div');
-                    // Improvement 1a: Add data attributes for lazy loading state.
                     listItem.className = 'pdf-list-item flex flex-col items-center';
                     listItem.id = `pdf-item-${currentIndex}`;
                     listItem.dataset.pdfIndex = currentIndex;
@@ -279,7 +283,7 @@
                         </div>
                         <div class="mt-2 text-center w-full h-24">
                             <label for="pdf-check-${currentIndex}" class="flex items-start justify-center cursor-pointer">
-                                <input type="checkbox" id="pdf-check-${currentIndex}" data-pdf-index="${currentIndex}" class="mr-2 h-4 w-4 accent-[#041E42] flex-shrink-0 mt-0.5" onchange="updateSelectionButtons()">
+                                <input type="checkbox" id="pdf-check-${currentIndex}" data-pdf-index="${currentIndex}" class="mr-2 h-4 w-4 accent-[#041E42] flex-shrink-0 mt-0.5" checked onchange="updateSelectionButtons()">
                                 <span class="text-sm break-words">${pdfInfo.displayName}</span>
                             </label>
                         </div>
@@ -287,11 +291,9 @@
                     gridContainer.appendChild(listItem);
                 });
             });
-            // Improvement 1a: Set up Intersection Observer for lazy loading.
             setupIntersectionObserver();
         }
 
-        // --- Improvement 1a: Lazy Loading Logic ---
         function setupIntersectionObserver() {
             const options = {
                 rootMargin: '0px',
@@ -306,7 +308,7 @@
                             loadPdfThumbnail(pdfIndex);
                             listItem.dataset.thumbnailLoaded = 'true';
                         }
-                        observer.unobserve(listItem); // Stop observing once loaded
+                        observer.unobserve(listItem);
                     }
                 });
             }, options);
@@ -321,7 +323,6 @@
             const listItem = document.getElementById(`pdf-item-${pdfIndex}`);
             const spinnerContainer = listItem.querySelector('.spinner-container');
             
-            // Improvement 2b: A simple progress indicator (the spinner) is active during load.
             try {
                 const pdfDoc = await pdfjsLib.getDocument(pdfInfo.name).promise;
                 const page = await pdfDoc.getPage(1);
@@ -345,11 +346,9 @@
             }
         }
         
-        // --- Improvement 1b: On-Demand Text Extraction ---
         async function extractPdfText(pdfIndex) {
             const pdfInfo = pdfData[pdfIndex];
             if (pdfInfo.content !== null || pdfInfo.isExtracting) {
-                // Already loaded or in progress, do nothing.
                 return;
             }
 
@@ -365,7 +364,7 @@
                 pdfData[pdfIndex].content = extractedText;
             } catch (error) {
                 console.error(`Failed to extract text from ${pdfInfo.name}:`, error);
-                pdfData[pdfIndex].content = ["Error: Could not load document content."]; // Mark as failed
+                pdfData[pdfIndex].content = ["Error: Could not load document content."];
             } finally {
                 pdfData[pdfIndex].isExtracting = false;
             }
@@ -430,14 +429,12 @@
             
             closeModalBtn.addEventListener('click', closePdfViewer);
 
-            // --- Improvement 3a: Event listener for Escape key ---
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
                     closePdfViewer();
                 }
             });
 
-            // --- Improvement 5a: Back to Top button logic ---
             window.addEventListener('scroll', () => {
                 if (window.scrollY > 300) {
                     backToTopBtn.classList.remove('hidden');
@@ -449,7 +446,6 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
 
-            // --- Improvement 6b: Event listeners for collapsible sections on mobile ---
             document.querySelectorAll('.collapsible-section > button').forEach(button => {
                 button.addEventListener('click', () => {
                     button.parentElement.classList.toggle('open');
@@ -472,12 +468,11 @@
             
             const selectedPdfIndexes = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt(cb.dataset.pdfIndex));
             if (selectedPdfIndexes.length === 0) {
-                resultsContainer.innerHTML = '<p>Please select at least one document.</p>';
+                resultsContainer.innerHTML = '<p>Please select at least one document filter above.</p>';
                 mainSearchCount.textContent = '';
                 return;
             }
             
-            // --- Improvement 2a: Show searching indicator ---
             resultsContainer.innerHTML = `
                 <div class="text-center p-8">
                     <div id="loader" class="mx-auto h-10 w-10"></div>
@@ -498,13 +493,11 @@
                 const pdf = pdfData[index];
                 if (!pdf) continue;
 
-                // --- Improvement 1b: Extract text only if needed ---
                 if (pdf.content === null) {
                     searchStatus.textContent = `Loading document ${i + 1} of ${selectedPdfIndexes.length}: ${pdf.displayName}`;
                     await extractPdfText(index);
                 }
 
-                // Skip if content extraction failed
                 if (!pdf.content || pdf.content[0].startsWith("Error:")) continue;
 
                 searchStatus.textContent = `Searching in ${pdf.displayName}...`;
@@ -514,7 +507,7 @@
                 pdf.content.forEach((pageText, pageIndex) => {
                     let match;
                     let pageSnippets = [];
-                    regex.lastIndex = 0; // Reset regex state
+                    regex.lastIndex = 0;
                     while ((match = regex.exec(pageText)) !== null) {
                         if (!foundInFile) foundInFile = true;
                         totalMatches++;
@@ -558,8 +551,7 @@
                 }
             }
             
-            // --- Update DOM after all searching is done ---
-            resultsContainer.innerHTML = ''; // Clear the loader
+            resultsContainer.innerHTML = '';
             if (!foundResults) {
                 resultsContainer.innerHTML = '<p>No results found for your query in the selected documents.</p>';
                 mainSearchCount.textContent = '0 matches';
@@ -569,7 +561,6 @@
             }
         }
         
-        // --- PDF Viewer Logic ---
         function openPdfViewer(pdfIndex, pageNumToShow) {
             const pdfItem = pdfData[pdfIndex];
             if (!pdfItem) return;
@@ -594,7 +585,7 @@
             
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            document.body.classList.add('overflow-hidden'); // Prevent background scroll
+            document.body.classList.add('overflow-hidden');
         }
 
         function closePdfViewer() {
