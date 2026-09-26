@@ -273,6 +273,7 @@
         let peakPdfViewer = null;
         let peakPdfFindController = null;
         let peakEventBus = null;
+        let peakLinkService = null;
 
         document.addEventListener('DOMContentLoaded', initializeApp);
 
@@ -500,7 +501,7 @@
                     peakPdfFindController.executeCommand('find', {
                         query: e.target.value,
                         highlightAll: true,
-                        phraseSearch: true
+                        phraseSearch: wholeWordCheck.checked
                     });
                 }
             });
@@ -511,7 +512,7 @@
                         peakPdfFindController.executeCommand('findagain', {
                             query: viewerSearchInput.value,
                             highlightAll: true,
-                            phraseSearch: true,
+                            phraseSearch: wholeWordCheck.checked,
                             findPrevious: e.shiftKey
                         });
                     }
@@ -523,7 +524,7 @@
                     peakPdfFindController.executeCommand('findagain', {
                         query: viewerSearchInput.value,
                         highlightAll: true,
-                        phraseSearch: true,
+                        phraseSearch: wholeWordCheck.checked,
                         findPrevious: false
                     });
                 }
@@ -534,7 +535,7 @@
                     peakPdfFindController.executeCommand('findagain', {
                         query: viewerSearchInput.value,
                         highlightAll: true,
-                        phraseSearch: true,
+                        phraseSearch: wholeWordCheck.checked,
                         findPrevious: true
                     });
                 }
@@ -641,10 +642,12 @@
                 pdf.content.forEach((pageText, pageIndex) => {
                     let match;
                     let pageSnippets = [];
+                    let firstMatchIndex = -1;
                     regex.lastIndex = 0;
                     
                     while ((match = regex.exec(pageText)) !== null) {
                         if (!foundInFile) foundInFile = true;
+                        if (firstMatchIndex === -1) firstMatchIndex = match.index;
                         totalMatches++;
                         
                         // Extract Snippet Context
@@ -663,10 +666,19 @@
                         
                         // Heuristic Parsing for Title
                         let sectionName = "";
-                        const textBeforeMatches = pageText.substring(0, pageText.indexOf(pageSnippets[0].replace(/<[^>]*>?/gm, '')));
-                        let secMatch;
-                        while ((secMatch = sectionRegex.exec(textBeforeMatches)) !== null) {
-                            sectionName = secMatch[0].charAt(0).toUpperCase() + secMatch[0].slice(1).toLowerCase();
+                        if (firstMatchIndex !== -1) {
+                            const textBeforeMatches = pageText.substring(0, firstMatchIndex);
+                            let secMatch;
+                            sectionRegex.lastIndex = 0; // Reset regex
+                            while ((secMatch = sectionRegex.exec(textBeforeMatches)) !== null) {
+                                // Format beautifully (e.g. "Section 14" from "sEcTioN 14")
+                                let words = secMatch[0].split(/\s+/);
+                                if (words.length > 1) {
+                                    sectionName = words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase() + " " + words.slice(1).join(" ");
+                                } else {
+                                    sectionName = secMatch[0].charAt(0).toUpperCase() + secMatch[0].slice(1).toLowerCase();
+                                }
+                            }
                         }
                         
                         let displayTitle = `Page ${pageNum}`;
@@ -742,17 +754,26 @@
             // Initialize the custom viewer precisely once
             if (!peakPdfViewer) {
                 peakEventBus = new pdfjsViewer.EventBus();
-                peakPdfFindController = new pdfjsViewer.PDFFindController({ eventBus: peakEventBus });
+                peakLinkService = new pdfjsViewer.PDFLinkService({ eventBus: peakEventBus });
+                peakPdfFindController = new pdfjsViewer.PDFFindController({ 
+                    eventBus: peakEventBus,
+                    linkService: peakLinkService
+                });
                 
                 peakPdfViewer = new pdfjsViewer.PDFViewer({
                     container: container,
                     eventBus: peakEventBus,
+                    linkService: peakLinkService,
                     findController: peakPdfFindController,
                 });
+
+                peakLinkService.setViewer(peakPdfViewer);
 
                 // Attach listener to trigger jump & search once pages render
                 peakEventBus.on('pagesinit', function () {
                     peakPdfViewer.currentScaleValue = 'page-width';
+                    
+                    // Small delay ensures rendering catches up before scrolling to match
                     setTimeout(() => {
                         if (window.pendingPageNumToShow) {
                             peakPdfViewer.currentPageNumber = window.pendingPageNumToShow;
@@ -762,10 +783,11 @@
                                 query: currentSearchQuery,
                                 phraseSearch: wholeWordCheck.checked,
                                 caseSensitive: caseSensitiveCheck.checked,
-                                highlightAll: true
+                                highlightAll: true,
+                                findPrevious: false
                             });
                         }
-                    }, 50);
+                    }, 100);
                 });
             }
 
@@ -774,12 +796,15 @@
                  // Fast track: Document is already rendered, just jump and highlight
                  peakPdfViewer.currentPageNumber = pageNumToShow;
                  if (currentSearchQuery) {
-                     peakPdfFindController.executeCommand('find', {
-                         query: currentSearchQuery,
-                         phraseSearch: wholeWordCheck.checked,
-                         caseSensitive: caseSensitiveCheck.checked,
-                         highlightAll: true
-                     });
+                     setTimeout(() => {
+                         peakPdfFindController.executeCommand('find', {
+                             query: currentSearchQuery,
+                             phraseSearch: wholeWordCheck.checked,
+                             caseSensitive: caseSensitiveCheck.checked,
+                             highlightAll: true,
+                             findPrevious: false
+                         });
+                     }, 100);
                  }
             } else {
                 // Load New Document
@@ -791,6 +816,7 @@
                 const loadingTask = pdfjsLib.getDocument(pdfUrl);
                 loadingTask.promise.then(function(pdfDocument) {
                     peakPdfViewer.setDocument(pdfDocument);
+                    peakLinkService.setDocument(pdfDocument, null); // CRITICAL for navigation
                     container.style.opacity = '1';
                 }).catch(function(error) {
                     console.error("Error loading PDF: ", error);
