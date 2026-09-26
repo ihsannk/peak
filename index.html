@@ -532,9 +532,9 @@ function setupIntersectionObserver() {
 // DOCUMENT UI
 // ============================================================
 function switchTab(index) {
-    trackEvent('peak_category_view', { category: categories[index]?.name || String(index) });
-    activeTabIndex = index;
-    const tabs = tabsHeader.querySelectorAll('[role="tab"]');
+    trackEvent('peak_category_view', { category: PDF_CATEGORIES[index]?.category || String(index) });
+    activeTabIndex = index;
+    const tabs = tabsHeader.querySelectorAll('[role="tab"]');
     const panels = pdfListCategoriesContainer.querySelectorAll('.tab-panel');
     tabs.forEach((tab, i) => {
         const active = i === index;
