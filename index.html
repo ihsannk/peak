@@ -59,6 +59,14 @@
                 display: none;
             }
         }
+        /* --- Improvement: Hide scrollbar for Tab Navigation --- */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 <body class="text-gray-800">
@@ -124,6 +132,10 @@
                             <button id="deselect-all-btn" class="text-sm font-semibold py-1 px-3 rounded-md transition-colors">Deselect All</button>
                         </div>
                     </div>
+                    
+                    <!-- Improvement: Tab Navigation Header -->
+                    <div id="pdf-tabs-header" class="flex border-b border-gray-200 mb-6 overflow-x-auto hide-scrollbar gap-2"></div>
+                    
                     <div id="initial-loader-container" class="text-center my-4">
                         <p class="mt-2 text-gray-600">Loading document list...</p>
                     </div>
@@ -141,7 +153,12 @@
                 </button>
                 <div id="results" class="collapsible-content text-gray-700">
                      <h2 class="text-2xl font-semibold mb-4 text-[#041E42] hidden md:block">Search Results</h2>
-                    <p>Search results will appear here.</p>
+                     <!-- Improvement: Premium Empty State -->
+                     <div class="flex flex-col items-center justify-center py-12 text-gray-400">
+                        <svg class="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg>
+                        <p class="text-lg font-medium text-gray-500">Your search results will appear here</p>
+                        <p class="text-sm">Enter a keyword above to scan the archives.</p>
+                    </div>
                 </div>
             </div>
         </main>
@@ -173,7 +190,6 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
 
         // --- CONFIGURATION ---
-        const PDF_VIEWER_URL = 'https://mozilla.github.io/pdf.js/web/viewer.html';
         const PDF_CATEGORIES = [
              {
                 category: "Acts",
@@ -250,13 +266,43 @@
             searchBtn.disabled = false;
         }
 
+        // Improvement: Tab Switching Logic
+        function switchTab(activeIndex) {
+            const tabs = document.querySelectorAll('#pdf-tabs-header button');
+            const panels = document.querySelectorAll('#pdf-list-categories .tab-panel');
+            
+            tabs.forEach((tab, index) => {
+                if (index === activeIndex) {
+                    tab.className = 'whitespace-nowrap py-3 px-6 border-b-2 font-medium text-sm transition-colors border-[#041E42] text-[#041E42]';
+                    panels[index].classList.remove('hidden');
+                    panels[index].classList.add('block');
+                } else {
+                    tab.className = 'whitespace-nowrap py-3 px-6 border-b-2 font-medium text-sm transition-colors border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+                    panels[index].classList.remove('block');
+                    panels[index].classList.add('hidden');
+                }
+            });
+        }
+
         function populatePdfList() {
             let globalFileIndex = 0;
-            PDF_CATEGORIES.forEach(category => {
+            const tabHeader = document.getElementById('pdf-tabs-header');
+
+            PDF_CATEGORIES.forEach((category, catIndex) => {
+                // Create Tab Button
+                const tabBtn = document.createElement('button');
+                tabBtn.className = `whitespace-nowrap py-3 px-6 border-b-2 font-medium text-sm transition-colors ${catIndex === 0 ? 'border-[#041E42] text-[#041E42]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`;
+                tabBtn.textContent = category.category;
+                tabBtn.onclick = () => switchTab(catIndex);
+                if(tabHeader) tabHeader.appendChild(tabBtn);
+
+                // Create Tab Panel
                 const categoryContainer = document.createElement('div');
-                categoryContainer.innerHTML = `<h3 class="text-xl font-semibold text-[#041E42] border-b-2 border-orange-200 pb-2 mb-4">${category.category}</h3>`;
+                categoryContainer.id = `tab-panel-${catIndex}`;
+                categoryContainer.className = `tab-panel ${catIndex === 0 ? 'block' : 'hidden'}`;
+                
                 const gridContainer = document.createElement('div');
-                gridContainer.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-6";
+                gridContainer.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-6 pt-4";
                 categoryContainer.appendChild(gridContainer);
                 pdfListCategoriesContainer.appendChild(categoryContainer);
 
@@ -461,24 +507,42 @@
             let query = currentSearchQuery.trim();
 
             if (!query) {
-                resultsContainer.innerHTML = '<p>Please enter a search term.</p>';
+                resultsContainer.innerHTML = '<p class="text-red-500 font-medium">Please enter a search term.</p>';
                 mainSearchCount.textContent = '';
                 return;
             }
             
             const selectedPdfIndexes = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt(cb.dataset.pdfIndex));
             if (selectedPdfIndexes.length === 0) {
-                resultsContainer.innerHTML = '<p>Please select at least one document filter above.</p>';
+                resultsContainer.innerHTML = '<p class="text-red-500 font-medium">Please select at least one document filter above.</p>';
                 mainSearchCount.textContent = '';
                 return;
             }
             
+            // --- UX Improvement: Auto-scroll to results ---
+            // Automatically glide down to the results section as soon as the search begins.
+            const resultsSection = document.getElementById('results-container');
+            setTimeout(() => {
+                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
+
+            // Improvement: Dynamic Search Progress Bar
             resultsContainer.innerHTML = `
-                <div class="text-center p-8">
-                    <div id="loader" class="mx-auto h-10 w-10"></div>
-                    <p id="search-status" class="mt-2 text-gray-600">Searching...</p>
+                <div class="w-full max-w-2xl mx-auto p-8 my-8 bg-gray-50 rounded-lg border border-gray-100">
+                    <div class="mb-3 flex justify-between items-end">
+                        <div>
+                            <h3 class="text-lg font-semibold text-[#041E42]">Scanning Archives</h3>
+                            <p class="text-sm text-gray-500" id="search-status">Initializing...</p>
+                        </div>
+                        <span class="text-[#F27E23] font-bold text-xl" id="search-progress-text">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div class="bg-[#F27E23] h-3 rounded-full transition-all duration-300 ease-out" id="search-progress-bar" style="width: 0%"></div>
+                    </div>
                 </div>`;
             const searchStatus = document.getElementById('search-status');
+            const searchProgressBar = document.getElementById('search-progress-bar');
+            const searchProgressText = document.getElementById('search-progress-text');
 
             let foundResults = false;
             let totalMatches = 0;
@@ -493,14 +557,18 @@
                 const pdf = pdfData[index];
                 if (!pdf) continue;
 
+                // Update Progress Bar State
+                const progressPercentage = Math.round((i / selectedPdfIndexes.length) * 100);
+                searchProgressBar.style.width = `${progressPercentage}%`;
+                searchProgressText.textContent = `${progressPercentage}%`;
+                searchStatus.textContent = `Reading: ${pdf.displayName}`;
+
                 if (pdf.content === null) {
-                    searchStatus.textContent = `Loading document ${i + 1} of ${selectedPdfIndexes.length}: ${pdf.displayName}`;
                     await extractPdfText(index);
                 }
 
                 if (!pdf.content || pdf.content[0].startsWith("Error:")) continue;
 
-                searchStatus.textContent = `Searching in ${pdf.displayName}...`;
                 const fileResultContainer = document.createElement('div');
                 let foundInFile = false;
                 
@@ -524,16 +592,22 @@
                     if (pageSnippets.length > 0) {
                         const pageNum = pageIndex + 1;
                         const pageResultDiv = document.createElement('div');
-                        pageResultDiv.className = 'mt-3 pl-4 border-l-4 border-gray-200';
-                        pageResultDiv.innerHTML = `<p>Found on page <span class="font-bold">${pageNum}</span>:</p>`;
+                        // --- UX Improvement: Polished Snippet Cards ---
+                        pageResultDiv.className = 'mt-4 pl-4 border-l-4 border-[#041E42] bg-gray-50 p-4 rounded-r-lg relative group';
+                        pageResultDiv.innerHTML = `<p class="font-medium text-gray-800 mb-2 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-[#F27E23]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            Page <span class="font-bold">${pageNum}</span>
+                        </p>`;
+                        
                         const goToPageBtn = document.createElement('button');
-                        goToPageBtn.textContent = 'View Page →';
-                        goToPageBtn.className = 'bg-[#F27E23] text-white font-bold py-1 px-3 rounded-md hover:bg-opacity-90 transition text-sm float-right -mt-6';
+                        goToPageBtn.innerHTML = 'View Match &rarr;';
+                        goToPageBtn.className = 'absolute top-3 right-3 bg-white border border-gray-300 text-[#041E42] font-semibold py-1 px-3 rounded hover:bg-[#041E42] hover:text-white transition-colors text-sm shadow-sm';
                         goToPageBtn.onclick = () => openPdfViewer(index, pageNum);
                         pageResultDiv.appendChild(goToPageBtn);
+                        
                         pageSnippets.forEach(snippetText => {
                             const snippetP = document.createElement('p');
-                            snippetP.className = 'text-gray-600 italic mt-1 pl-2 text-sm';
+                            snippetP.className = 'text-gray-700 leading-relaxed mt-2 text-sm bg-white p-3 rounded border border-gray-100 shadow-sm';
                             snippetP.innerHTML = snippetText;
                             pageResultDiv.appendChild(snippetP);
                         });
@@ -544,8 +618,15 @@
                 if (foundInFile) {
                     foundResults = true;
                     const resultDiv = document.createElement('div');
-                    resultDiv.className = 'mb-4 p-4 border border-gray-200 rounded-lg';
-                    resultDiv.innerHTML = `<h3 class="text-xl font-semibold text-[#041E42] mb-2">${pdf.displayName}</h3>`;
+                    // --- UX Improvement: Polished Document Header Cards ---
+                    resultDiv.className = 'mb-6 p-6 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow';
+                    resultDiv.innerHTML = `
+                        <div class="flex items-center gap-3 mb-2 border-b border-gray-100 pb-3">
+                            <div class="bg-orange-100 p-2 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-[#F27E23]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                            </div>
+                            <h3 class="text-xl font-bold text-[#041E42]">${pdf.displayName}</h3>
+                        </div>`;
                     resultDiv.appendChild(fileResultContainer);
                     tempResultsContainer.appendChild(resultDiv);
                 }
@@ -567,20 +648,18 @@
 
             pdfViewerTitle.textContent = pdfItem.displayName;
             const pdfUrl = new URL(pdfItem.name, window.location.href).href;
-            let viewerUrl = `${PDF_VIEWER_URL}?file=${encodeURIComponent(pdfUrl)}`;
-            const hashParams = [];
-            if (pageNumToShow) hashParams.push(`page=${pageNumToShow}`);
+            
+            // Improvement: Use Browser's Native PDF Viewer (Faster, Native Hash Params, No CORS Errors)
+            let viewerUrl = `${pdfUrl}#view=FitH`;
+            if (pageNumToShow) viewerUrl += `&page=${pageNumToShow}`;
             if (currentSearchQuery) {
-                hashParams.push(`search=${encodeURIComponent(currentSearchQuery)}`);
-                hashParams.push(`phrase=${wholeWordCheck.checked}`);
+                viewerUrl += `&search=${encodeURIComponent(currentSearchQuery)}`;
             }
-
-            if (hashParams.length > 0) viewerUrl += `#${hashParams.join('&')}`;
 
             iframeContainer.innerHTML = '';
             const iframe = document.createElement('iframe');
             iframe.src = viewerUrl;
-            iframe.className = 'w-full h-full border-0';
+            iframe.className = 'w-full h-full border-0 rounded-b-lg';
             iframeContainer.appendChild(iframe);
             
             modal.classList.remove('hidden');
